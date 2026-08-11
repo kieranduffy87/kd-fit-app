@@ -1,10 +1,12 @@
-const CACHE = 'kd-fit-v1';
+const CACHE = 'kd-fit-v2';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './fonts/instrument-sans-0.woff2',
+  './fonts/instrument-sans-1.woff2'
 ];
 
 self.addEventListener('install', (e) => {
@@ -21,7 +23,23 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
+// Navigations go network-first so a deploy shows up on the next launch;
+// the cached shell is the fallback when offline. Everything else is
+// cache-first — fonts and icons don't change without a cache bump.
 self.addEventListener('fetch', (e) => {
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put('./index.html', copy));
+          return res;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then((cached) => cached || fetch(e.request))
   );

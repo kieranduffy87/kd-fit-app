@@ -8,8 +8,32 @@ A daily discipline tracker counting down to your 40th (5 July 2027), built in th
 - `index.html` — the whole app
 - `manifest.json` — makes it installable to your home screen
 - `sw.js` — service worker (offline support + notification display)
-- `icons/` — app icons
+- `icons/` — app icons, generated from the KD chevron
+- `fonts/` — Instrument Sans, self-hosted from `kd-design-system`
 - `.github/workflows/deploy.yml` — publishes the site to GitHub Pages on every push to `main`
+
+## Design
+
+Built on `kd-design-system` — one mark, one blue, one typeface. Tokens mirror
+`css/tokens.css` (Night Studio dark theme); motion uses the house curve
+`cubic-bezier(0.22, 0.7, 0.2, 1)` and the rise-and-unblur primitive, so it
+settles rather than bounces.
+
+- **The dial is the screen.** The number is days to 40; the ring around it is
+  today, closing as you log. Finish the day and the ring shuts, the glow lifts
+  and the caption turns blue.
+- **Blue stays scarce** — the accent word, the ring, the checks. Active
+  training chips are a tint and a border rather than a fill, because four
+  solid pills at once would swamp the screen.
+- **Art is generative**, not photographic: a deep-blue bloom on Scrim Ink under
+  a film-grain overlay, drawn in CSS and SVG. Sharp at any size, a couple of KB,
+  works offline.
+- **The view is patched, not rebuilt.** Toggling an item updates only what
+  changed instead of re-rendering, which is what lets the ring, meters and
+  check marks animate at all.
+- Instrument Sans is self-hosted, so the app is on brand on first paint and
+  offline. Haptics fire on toggle, and safe-area insets keep it clear of the
+  notch and home indicator when installed.
 
 ## Deploying
 
