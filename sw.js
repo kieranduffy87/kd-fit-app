@@ -9,7 +9,8 @@ const ASSETS = [
   './icons/icon-512.png',
   './icons/favicon.svg',
   './fonts/instrument-sans-0.woff2',
-  './fonts/instrument-sans-1.woff2'
+  './fonts/instrument-sans-1.woff2',
+  './img/splash.webp'
 ];
 
 self.addEventListener('install', (e) => {

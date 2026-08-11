@@ -18,7 +18,17 @@ A daily discipline tracker counting down to your 40th (7 May 2027), built in the
 ## How it scores you
 
 **Daily habits** drive everything — the ring, the streak, the ledger. A day counts
-as logged at 70% of them.
+as logged at 70% of them. Four sections ship by default: Body, Mind, Soul and
+Inflammation.
+
+Each day records the habit count it was scored against, so adding habits later
+raises the bar from that point on rather than retroactively failing days you
+already earned. Days logged before that was tracked are stamped with their
+original count on upgrade.
+
+The Inflammation habits are ordinary daily levers — diet pattern, alcohol, and
+the overnight fast. They are not medical advice, and inflammation you're actually
+worried about is a conversation for a doctor, not a checklist.
 
 **Training is a weekly target, not a daily box.** Two lifts, one football, three
 mobility — done across the week, whenever. A rest day is not a failure and can't

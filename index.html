@@ -36,14 +36,15 @@
     transition:opacity 0.55s cubic-bezier(0.22,0.7,0.2,1);
   }
   #splash.out{opacity:0;pointer-events:none;}
+  /* The scrim sits over the art so the mark holds against the arc.
+     Gradients render immediately; the photograph fades in behind. */
   #splash .splash-art{
     position:absolute;
     inset:0;
     background:
-      radial-gradient(ellipse 70% 45% at 50% 34%, rgba(3,57,248,0.26), transparent 66%),
+      radial-gradient(ellipse 46% 26% at 50% 50%, rgba(10,11,14,0.72), transparent 72%),
+      url('img/splash.webp') center/cover no-repeat,
       linear-gradient(180deg,#0a0f22,#08090b 62%);
-    background-size:cover;
-    background-position:center;
     opacity:0;
     animation:splash-art 1.6s cubic-bezier(0.22,0.7,0.2,1) forwards;
   }

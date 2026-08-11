@@ -22,6 +22,19 @@
    ------------------------------------------------------------ */
 const VAPID_PUBLIC_KEY = '';
 
+/* Daily levers with reasonable evidence behind them for inflammatory
+   load — diet pattern, alcohol, and the overnight fast. Deliberately
+   behavioural and daily-checkable; nothing here is medical advice, and
+   persistent inflammation is a conversation for a doctor. Edit or
+   remove any of them in Settings. */
+const INFLAMMATION_ITEMS = [
+  { id: 'omega3', label: 'Oily fish, olive oil or nuts' },
+  { id: 'colour', label: 'Two portions of colour — berries or greens' },
+  { id: 'unprocessed', label: 'Nothing ultra-processed' },
+  { id: 'noalcohol', label: 'Alcohol-free day' },
+  { id: 'overnightfast', label: '12 hours between dinner and breakfast' }
+];
+
 const DEFAULT_CONFIG = {
   birthday: '2027-05-07',
   // Daily habits — these drive the ring, the streak and the ledger.
@@ -38,7 +51,8 @@ const DEFAULT_CONFIG = {
     { id: 'soul', title: 'Soul', items: [
       { id: 'sleep', label: 'Fixed sleep / wake time' },
       { id: 'lookforward', label: 'One thing to look forward to' }
-    ]}
+    ]},
+    { id: 'inflammation', title: 'Inflammation', items: INFLAMMATION_ITEMS }
   ],
   // Training is a weekly target, not a daily box. A rest day is not a
   // failure, so it must not be able to break a streak.
@@ -141,35 +155,109 @@ function dailyDone(entry){
   return dailyItems().filter(it => entry[it.id]).length;
 }
 
+/* Past days are scored against the habit count that was in force when
+   they were logged, recorded as _total. Without it, adding a habit today
+   would raise the bar on every day already behind you and wipe out a
+   streak you actually earned. Days logged before this existed fall back
+   to the current count. */
+function trainingIdSet(){ return new Set(config.training.map(t => t.id)); }
+
+function dayTotalOf(entry){
+  const t = Number(entry._total);
+  return t > 0 ? t : dailyTotal();
+}
+
+// Counts every non-training tick, so a habit since renamed or removed
+// still counts toward the day it was logged on.
+function loggedCount(entry, total, tids){
+  let n = 0;
+  for(const k in entry){
+    if(!entry[k] || k.startsWith('_') || tids.has(k)) continue;
+    n++;
+  }
+  return Math.min(n, total);
+}
+
+function isGoodDay(d){
+  return d.total > 0 && d.done >= Math.ceil(d.total * GOOD_DAY);
+}
+
 /* ---------- migration ----------
    v1 and v2 shipped "Lift 1" and "Lift 2" as separate daily boxes.
    Weekly training replaces them with one Lift activity done twice a
    week, so fold any old lift1/lift2 tick into the new id.
    -------------------------------------------------------------- */
-function migrate(){
-  if(read('kd-fit:migrated', 0) >= 3) return;
+function dayKeysInStorage(){
+  const keys = [];
   for(let i = 0; i < localStorage.length; i++){
     const k = localStorage.key(i);
-    if(!k || !/^kd-fit:\d{4}-\d{2}-\d{2}$/.test(k)) continue;
-    const entry = read(k, null);
-    if(!entry) continue;
-    if(entry.lift1 || entry.lift2){
-      entry.lift = true;
-      delete entry.lift1;
-      delete entry.lift2;
-      write(k, entry);
+    if(k && /^kd-fit:\d{4}-\d{2}-\d{2}$/.test(k)) keys.push(k);
+  }
+  return keys; // collected first — the loops below write as they go
+}
+
+function migrate(){
+  const at = read('kd-fit:migrated', 0);
+  if(at >= 4) return;
+  const keys = dayKeysInStorage();
+
+  if(at < 3){
+    keys.forEach(k => {
+      const entry = read(k, null);
+      if(!entry) return;
+      if(entry.lift1 || entry.lift2){
+        entry.lift = true;
+        delete entry.lift1;
+        delete entry.lift2;
+        write(k, entry);
+      }
+    });
+  }
+
+  if(at < 4){
+    // Stamp every day already logged with the habit count it was
+    // actually scored against, BEFORE the new section lands. Without
+    // this they fall back to the new count and a real streak evaporates.
+    const stored = read('kd-fit:config', null);
+    const priorDaily = (stored && Array.isArray(stored.daily))
+      ? stored.daily
+      : DEFAULT_CONFIG.daily.filter(s => s.id !== 'inflammation');
+    const priorTotal = priorDaily.reduce((n, s) => n + (s.items ? s.items.length : 0), 0);
+
+    if(priorTotal > 0){
+      keys.forEach(k => {
+        const entry = read(k, null);
+        if(!entry || entry._total) return;
+        entry._total = priorTotal;
+        write(k, entry);
+      });
+    }
+
+    // A new default section never reaches anyone who has already saved
+    // settings, since their stored config wins. Add it explicitly.
+    if(stored && Array.isArray(stored.daily) && !stored.daily.some(s => s.id === 'inflammation')){
+      stored.daily.push({
+        id: 'inflammation',
+        title: 'Inflammation',
+        items: structuredClone(INFLAMMATION_ITEMS)
+      });
+      write('kd-fit:config', stored);
     }
   }
-  write('kd-fit:migrated', 3);
+
+  write('kd-fit:migrated', 4);
 }
 
 /* ---------- computed history ---------- */
 function historyFrom(startDate, count){
+  const tids = trainingIdSet();
   const days = [];
   for(let i = 0; i < count; i++){
     const d = addDays(startDate, i);
     const key = dayKey(d);
-    days.push({ key, date: d, done: dailyDone(getDay(key)) });
+    const entry = getDay(key);
+    const total = dayTotalOf(entry);
+    days.push({ key, date: d, total, done: loggedCount(entry, total, tids) });
   }
   return days;
 }
@@ -181,20 +269,20 @@ function recentHistory(){
 function streakOf(days){
   let s = 0;
   for(let i = days.length - 2; i >= 0; i--){
-    if(days[i].done >= goodDayMark()) s++; else break;
+    if(isGoodDay(days[i])) s++; else break;
   }
   return s;
 }
 function bestRunOf(days){
   let best = 0, run = 0;
   days.forEach(d => {
-    if(d.done >= goodDayMark()){ run++; best = Math.max(best, run); }
+    if(isGoodDay(d)){ run++; best = Math.max(best, run); }
     else run = 0;
   });
   return best;
 }
 function rateOf(days){
-  const good = days.filter(d => d.done >= goodDayMark()).length;
+  const good = days.filter(isGoodDay).length;
   return Math.round((good / days.length) * 100);
 }
 
@@ -408,29 +496,26 @@ function buildLedger(){
 
 function buildTally(){
   const days = recentHistory();
-  const total = dailyTotal();
-  const mark = goodDayMark();
   const tKey = dayKey();
 
   el.ledgerLabel.textContent = 'Last 28 days';
   el.ledgerBody.innerHTML = `<div class="tally-row" data-tally>${
     days.map((d, i) => {
-      const ratio = total ? Math.min(d.done / total, 1) : 0;
+      const ratio = d.total ? Math.min(d.done / d.total, 1) : 0;
       const cls = ['tally'];
       if(d.key === tKey) cls.push('today');
-      if(d.done >= mark) cls.push('full');
+      if(isGoodDay(d)) cls.push('full');
       else if(d.done > 0) cls.push('partial');
       const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
       return `<div class="${cls.join(' ')}" data-day="${d.key}"
         style="height:${38 + ratio * 62}%;${REDUCED_MOTION ? '' : `animation:kd-tally-in 0.5s var(--kd-ease) ${320 + i * 14}ms both`}"
-        title="${label} — ${d.done}/${total}"></div>`;
+        title="${label} — ${d.done}/${d.total}"></div>`;
     }).join('')
   }</div>`;
   el.tally = document.querySelector('[data-tally]');
 }
 
 function buildYear(){
-  const total = dailyTotal();
   const tKey = dayKey();
   const start = addDays(weekStart(), -(YEAR_WEEKS - 1) * 7);
   const days = historyFrom(start, YEAR_WEEKS * 7);
@@ -441,7 +526,7 @@ function buildYear(){
     <div class="year-wrap" data-year-wrap>
       <div class="year">${days.map(d => {
         if(d.date.getTime() > todayTime) return `<div class="ycell void"></div>`;
-        const ratio = total ? d.done / total : 0;
+        const ratio = d.total ? d.done / d.total : 0;
         let cls = 'ycell';
         if(ratio >= 0.99) cls += ' l4';
         else if(ratio >= 0.66) cls += ' l3';
@@ -449,7 +534,7 @@ function buildYear(){
         else if(ratio > 0) cls += ' l1';
         if(d.key === tKey) cls += ' today';
         const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
-        return `<div class="${cls}" data-day="${d.key}" title="${label} — ${d.done}/${total}"></div>`;
+        return `<div class="${cls}" data-day="${d.key}" title="${label} — ${d.done}/${d.total}"></div>`;
       }).join('')}</div>
     </div>`;
 
@@ -544,6 +629,7 @@ function toggle(node){
   const wasOn = !!today[id];
   today[id] = !wasOn;
   if(!today[id]) delete today[id];
+  today._total = dailyTotal(); // what this day was scored out of
   setDay(dayKey(), today);
 
   if(!wasOn){
@@ -922,6 +1008,7 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden) check
 
 /* ---------- boot ---------- */
 migrate();
+config = loadConfig(); // migrate may have rewritten it
 today = getDay(dayKey());
 build();
 sync();
