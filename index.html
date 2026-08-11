@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#08090B">
+<title>40 — KD Performance Log</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* KD tokens — Night Studio */
+    --bg:#08090B;
+    --surface:#101216;
+    --surface2:#16181D;
+    --text:#ECEEF2;
+    --muted:#8F939D;
+    --line: rgba(244,244,246,0.13);
+    --blue:#0339F8;
+    --paper:#F4F4F6;
+    --red:#C62F2F;
+
+    --ease: cubic-bezier(0.22, 0.7, 0.2, 1);
+    --t-fast: 250ms;
+    --t-move: 350ms;
+    --t-reveal: 900ms;
+
+    --r-card: 18px;
+    --r-nested: 14px;
+    --r-input: 10px;
+    --r-pill: 100px;
+
+    --pad: clamp(1.25rem, 4vw, 4rem);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
+  body{
+    font-family:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+    padding: 2rem var(--pad) 4rem;
+    max-width:560px;
+    margin:0 auto;
+    min-height:100vh;
+  }
+  a{color:inherit;}
+
+  /* motion primitive: rise + unblur */
+  .kd-rise{
+    opacity:0;
+    transform: translateY(2rem);
+    filter: blur(5px);
+    animation: kd-in var(--t-reveal) var(--ease) forwards;
+  }
+  @keyframes kd-in{
+    to{ opacity:1; transform:translateY(0); filter:blur(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .kd-rise{ animation:none; opacity:1; transform:none; filter:none; }
+    *{ transition:none !important; animation-duration:0.01ms !important; }
+  }
+
+  .kicker{
+    font-size:0.72rem;
+    font-weight:500;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .top{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:2rem;
+  }
+  .date{
+    font-size:0.72rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  .hero{
+    text-align:center;
+    padding:2.5rem 0 2rem;
+    border-bottom:1px solid var(--line);
+    margin-bottom:1.75rem;
+  }
+  .hero-num{
+    font-size:clamp(4.5rem, 20vw, 6.5rem);
+    font-weight:500;
+    line-height:0.95;
+    letter-spacing:-0.02em;
+    font-variant-numeric:tabular-nums;
+  }
+  .hero-line{
+    font-size:1.1rem;
+    font-weight:500;
+    margin-top:0.4rem;
+  }
+  .hero-line em{
+    font-style:normal;
+    color:var(--blue);
+  }
+  .hero-sub{
+    font-size:0.72rem;
+    letter-spacing:0.08em;
+    color:var(--muted);
+    margin-top:0.6rem;
+  }
+
+  .stats-row{
+    display:flex;
+    justify-content:space-between;
+    padding:1.25rem 0;
+    margin-bottom:1.75rem;
+    border-bottom:1px solid var(--line);
+  }
+  .stat{ text-align:center; flex:1; }
+  .stat-num{
+    font-size:1.9rem;
+    font-weight:500;
+    color:var(--blue);
+    font-variant-numeric:tabular-nums;
+  }
+  .stat-cap{
+    font-size:0.66rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-top:0.2rem;
+  }
+
+  .ledger{ margin-bottom:1.75rem; }
+  .ledger-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:0.75rem;
+  }
+  .tally-row{ display:flex; gap:3px; flex-wrap:wrap; }
+  .tally{
+    width:11px; height:24px;
+    background:var(--surface2);
+    border-radius:3px;
+    transition:background var(--t-fast) var(--ease);
+  }
+  .tally.full{ background:var(--blue); }
+  .tally.partial{ background: rgba(3,57,248,0.35); }
+  .tally.today{ outline:1.5px solid var(--blue); outline-offset:2px; }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--r-card);
+    padding:1.25rem;
+    margin-bottom:1rem;
+  }
+  .card-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:0.5rem;
+  }
+  .card-title{ font-size:1.05rem; font-weight:600; }
+  .card-count{ font-size:0.72rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  .item{
+    display:flex; align-items:center; gap:0.85rem;
+    padding:0.75rem 0.1rem;
+    border-top:1px solid var(--line);
+    cursor:pointer;
+    user-select:none;
+  }
+  .item:first-of-type{ border-top:none; }
+  .box{
+    width:22px; height:22px; min-width:22px;
+    border:1.5px solid var(--muted);
+    border-radius:var(--r-input);
+    display:flex; align-items:center; justify-content:center;
+    transition:all var(--t-fast) var(--ease);
+  }
+  .box.checked{ background:var(--blue); border-color:var(--blue); }
+  .box svg{ opacity:0; width:12px; height:12px; transition:opacity var(--t-fast) ease; }
+  .box.checked svg{ opacity:1; }
+  .item-label{
+    font-size:0.95rem;
+    transition:color var(--t-fast) ease, opacity var(--t-fast) ease;
+  }
+  .item.done .item-label{ color:var(--muted); text-decoration:line-through; opacity:0.75; }
+
+  .chip-row{ display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.25rem; }
+  .chip{
+    padding:0.6rem 1rem;
+    border-radius:var(--r-pill);
+    border:1px solid var(--line);
+    background:var(--surface2);
+    font-size:0.78rem;
+    font-weight:500;
+    color:var(--muted);
+    text-align:center;
+    cursor:pointer;
+    transition:all var(--t-fast) var(--ease);
+    flex:1;
+    min-width:calc(50% - 0.25rem);
+  }
+  .chip.active{
+    background:rgba(3,57,248,0.14);
+    border-color:var(--blue);
+    color:var(--text);
+  }
+
+  .kd-btn{
+    display:block;
+    width:100%;
+    padding:0.9rem 1.5rem;
+    border-radius:var(--r-pill);
+    border:none;
+    background:var(--blue);
+    color:var(--paper);
+    font-family:inherit;
+    font-size:0.85rem;
+    font-weight:600;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    transition: transform var(--t-move) var(--ease), opacity var(--t-fast) ease;
+    margin-top:0.5rem;
+  }
+  .kd-btn:active{ transform:scale(0.98); }
+  .kd-btn.ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--muted);
+  }
+  .kd-btn.on{
+    background:rgba(3,57,248,0.14);
+    border:1px solid var(--blue);
+    color:var(--text);
+  }
+  .kd-btn:focus-visible, .item:focus-visible, .chip:focus-visible{
+    outline:3px solid var(--blue);
+    outline-offset:3px;
+  }
+
+  .notif-status{
+    font-size:0.72rem;
+    color:var(--muted);
+    text-align:center;
+    margin-top:0.6rem;
+    letter-spacing:0.02em;
+  }
+
+  .footer{
+    text-align:center;
+    font-size:0.72rem;
+    color:var(--muted);
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    margin-top:2.5rem;
+    padding-top:1.5rem;
+    border-top:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+const BIRTHDAY = new Date(2027, 6, 5); // 5 July 2027
+
+const CHECKLIST = {
+  body: { title: "Body", items: [
+    { id: "walk", label: "Morning walk — 10+ min outside" },
+    { id: "protein", label: "Protein at first meal" },
+    { id: "water", label: "Water before coffee" }
+  ]},
+  mind: { title: "Mind", items: [
+    { id: "task", label: "One task done before phone" },
+    { id: "noinput", label: "5 min no-input" }
+  ]},
+  soul: { title: "Soul", items: [
+    { id: "sleep", label: "Fixed sleep / wake time" },
+    { id: "lookforward", label: "One thing to look forward to" }
+  ]}
+};
+
+const TRAINING = [
+  { id: "lift1", label: "Lift 1" },
+  { id: "lift2", label: "Lift 2" },
+  { id: "football", label: "Football" },
+  { id: "mobility", label: "Mobility" }
+];
+
+function totalItems(){
+  let n = TRAINING.length;
+  Object.values(CHECKLIST).forEach(s => n += s.items.length);
+  return n;
+}
+
+function todayKey(d = new Date()){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function daysUntil(target){
+  const now = new Date();
+  const a = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const b = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+  return Math.round((b-a)/86400000);
+}
+
+function getEntry(dateKey){
+  try{
+    const raw = localStorage.getItem(`kd-fit:${dateKey}`);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function setEntry(dateKey, data){
+  localStorage.setItem(`kd-fit:${dateKey}`, JSON.stringify(data));
+}
+
+let today = getEntry(todayKey());
+
+function history28(){
+  const days = [];
+  const now = new Date();
+  for(let i=27;i>=0;i--){
+    const d = new Date(now); d.setDate(d.getDate()-i);
+    const key = todayKey(d);
+    const data = getEntry(key);
+    const checked = Object.values(data).filter(Boolean).length;
+    days.push({ date:key, checked, total: totalItems() });
+  }
+  return days;
+}
+
+function streak(hist){
+  let s = 0;
+  for(let i=hist.length-1;i>=0;i--){
+    const e = hist[i];
+    if(e.date === todayKey()) continue;
+    if(e.checked >= Math.ceil(e.total*0.7)) s++;
+    else break;
+  }
+  return s;
+}
+
+function check(){
+  return `<svg viewBox="0 0 12 12" fill="none"><path d="M2 6L5 9L10 3" stroke="#08090B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
+
+async function requestNotifications(){
+  if(!NOTIF_SUPPORTED){
+    alert('Notifications are not supported in this browser.');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  render();
+  if(perm === 'granted' && navigator.serviceWorker){
+    const reg = await navigator.serviceWorker.ready;
+    reg.active.postMessage({
+      type:'SHOW_NOTIFICATION',
+      title:'Notifications on',
+      body:"You'll get reminders once this is wired to a push schedule."
+    });
+  }
+}
+
+function notifStatusText(){
+  if(!NOTIF_SUPPORTED) return 'Not supported in this browser';
+  if(Notification.permission === 'granted') return 'Notifications on';
+  if(Notification.permission === 'denied') return 'Notifications blocked — enable in Settings';
+  return 'Notifications off — tap to enable';
+}
+
+function render(){
+  const app = document.getElementById('app');
+  const days = daysUntil(BIRTHDAY);
+  const hist = history28();
+  const currentStreak = streak(hist);
+  const totalDone = Object.values(today).filter(Boolean).length;
+
+  const tallyHTML = hist.map(e=>{
+    const ratio = e.total ? e.checked/e.total : 0;
+    let cls = 'tally';
+    if(e.date === todayKey()) cls += ' today';
+    if(ratio >= 0.7) cls += ' full';
+    else if(ratio > 0) cls += ' partial';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  let sectionsHTML = '';
+  Object.values(CHECKLIST).forEach(sec=>{
+    const doneCount = sec.items.filter(it=>today[it.id]).length;
+    sectionsHTML += `
+      <div class="card kd-rise">
+        <div class="card-head">
+          <div class="card-title">${sec.title}</div>
+          <div class="card-count">${doneCount}/${sec.items.length}</div>
+        </div>
+        ${sec.items.map(it=>{
+          const on = !!today[it.id];
+          return `<div class="item ${on?'done':''}" data-id="${it.id}" tabindex="0" role="checkbox" aria-checked="${on}">
+            <div class="box ${on?'checked':''}">${check()}</div>
+            <div class="item-label">${it.label}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  });
+
+  const trainingHTML = `
+    <div class="card kd-rise">
+      <div class="card-head">
+        <div class="card-title">Training</div>
+        <div class="card-count">tap what you did</div>
+      </div>
+      <div class="chip-row">
+        ${TRAINING.map(t=>{
+          const on = !!today[t.id];
+          return `<div class="chip ${on?'active':''}" data-id="${t.id}" tabindex="0" role="checkbox" aria-checked="${on}">${t.label}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  app.innerHTML = `
+    <div class="top kd-rise">
+      <div class="kicker">40 · Performance Log</div>
+      <div class="date">${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div>
+    </div>
+
+    <div class="hero kd-rise">
+      <div class="hero-num">${days}</div>
+      <div class="hero-line">Days to <em>40.</em></div>
+      <div class="hero-sub">${BIRTHDAY.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
+    </div>
+
+    <div class="stats-row kd-rise">
+      <div class="stat">
+        <div class="stat-num">${currentStreak}</div>
+        <div class="stat-cap">Day streak</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">${totalDone}</div>
+        <div class="stat-cap">Today, ${totalItems()} total</div>
+      </div>
+    </div>
+
+    <div class="ledger kd-rise">
+      <div class="ledger-head">
+        <div class="kicker">Last 28 days</div>
+      </div>
+      <div class="tally-row">${tallyHTML}</div>
+    </div>
+
+    ${sectionsHTML}
+    ${trainingHTML}
+
+    <div class="card kd-rise">
+      <div class="card-head">
+        <div class="card-title">Reminders</div>
+      </div>
+      <button class="kd-btn ${NOTIF_SUPPORTED && Notification.permission==='granted' ? 'on':''}" id="notif-btn">
+        ${NOTIF_SUPPORTED && Notification.permission==='granted' ? 'Send test reminder' : 'Enable notifications'}
+      </button>
+      <div class="notif-status">${notifStatusText()}</div>
+    </div>
+
+    <div class="footer">Consistency over intensity</div>
+  `;
+
+  app.querySelectorAll('.item, .chip').forEach(el=>{
+    const toggle = async () => {
+      const id = el.getAttribute('data-id');
+      today[id] = !today[id];
+      setEntry(todayKey(), today);
+      render();
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+  });
+
+  document.getElementById('notif-btn').addEventListener('click', async ()=>{
+    if(NOTIF_SUPPORTED && Notification.permission === 'granted'){
+      if(navigator.serviceWorker){
+        const reg = await navigator.serviceWorker.ready;
+        reg.active.postMessage({ type:'SHOW_NOTIFICATION', title:'40', body:'Log today before it resets.' });
+      }
+    } else {
+      requestNotifications();
+    }
+  });
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>console.error('SW failed', err));
+  });
+}
+
+render();
+</script>
+</body>
+</html>
