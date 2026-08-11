@@ -460,7 +460,7 @@ function build(){
       <div class="card-head">
         <div class="card-headings">
           <h2 class="card-title">${escapeHtml(sec.title)}</h2>
-          <div class="card-count" data-count>0/${sec.items.length}</div>
+          <div class="card-count" data-count><b>0</b>/${sec.items.length}</div>
         </div>
         <div class="gauge" data-gauge>${buildGauge(gaugeType(sec.id), sec.items.length, sec.id)}</div>
       </div>
@@ -545,7 +545,7 @@ function build(){
       <div class="card-head">
         <div class="card-headings">
           <h2 class="card-title">Training</h2>
-          <div class="card-count" data-week-count>0/0 this week</div>
+          <div class="card-count" data-week-count><b>0</b>/0 this week</div>
         </div>
         <div class="gauge" data-week-gauge>${
           buildGauge('arc', config.training.reduce((n, t) => n + t.target, 0) || 1, 'train')
@@ -684,7 +684,7 @@ function sync(){
     const card = document.querySelector(`[data-section="${sec.id}"]`);
     if(!card) return;
     const n = sec.items.filter(it => today[it.id]).length;
-    card.querySelector('[data-count]').textContent = `${n}/${sec.items.length}`;
+    card.querySelector('[data-count]').innerHTML = `<b>${n}</b>/${sec.items.length}`;
     syncGauge(card.querySelector('[data-gauge]'), gaugeType(sec.id), n, sec.items.length);
   });
 
@@ -697,7 +697,7 @@ function sync(){
   // training — weekly
   const week = trainingWeek();
   const prog = trainingProgress(week);
-  el.weekCount.textContent = `${prog.hit}/${prog.target} this week`;
+  el.weekCount.innerHTML = `<b>${prog.hit}</b>/${prog.target} this week`;
   syncGauge(el.weekGauge, 'arc', prog.hit, prog.target);
 
   el.trains.forEach(node => {
