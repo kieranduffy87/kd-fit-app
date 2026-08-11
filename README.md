@@ -1,6 +1,6 @@
 # 40 — KD Performance Log
 
-A daily discipline tracker counting down to your 40th (5 July 2027), built in the KD design system (Night Studio theme, Electric Blue, Instrument Sans).
+A daily discipline tracker counting down to your 40th (7 May 2027), built in the KD design system (Night Studio theme, Electric Blue, Instrument Sans).
 
 **Live:** https://kieranduffy87.github.io/kd-fit-app/
 
