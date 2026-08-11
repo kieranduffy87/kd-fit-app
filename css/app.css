@@ -306,7 +306,16 @@ body.is-complete .dial-glow{opacity:0.85;}
   overflow:hidden;
 }
 .card.pad-b{padding-bottom:1.35rem;}
-.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;}
+.card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding-bottom:1rem;
+  border-bottom:1px solid var(--kd-line);
+  margin-bottom:0.15rem;
+}
+.card-headings{min-width:0;}
 .card-title{font-size:1.1rem;font-weight:600;letter-spacing:-0.01em;line-height:1.3;}
 .card-count{
   font-size:var(--kd-fs-tag);
@@ -315,20 +324,65 @@ body.is-complete .dial-glow{opacity:0.85;}
   color:var(--kd-muted);
   font-variant-numeric:tabular-nums;
   white-space:nowrap;
+  margin-top:0.1rem;
 }
-.card-meter{
-  height:2px;
-  border-radius:2px;
-  background:var(--kd-line);
-  margin:0.85rem 0 0.35rem;
-  overflow:hidden;
+
+/* ============================================================
+   Section instruments — four mechanisms, one family.
+   ============================================================ */
+.gauge{width:68px;height:68px;flex:none;}
+.g{width:100%;height:100%;display:block;overflow:visible;}
+
+.g .seg{
+  fill:none;
+  stroke:var(--kd-surface-2);
+  stroke-width:4;
+  stroke-linecap:round;
+  transition:stroke var(--kd-t-fast) var(--kd-ease),opacity var(--kd-t-fast) var(--kd-ease);
 }
-.card-meter i{
-  display:block;height:100%;width:0;
-  border-radius:2px;
-  background:var(--kd-blue);
-  transition:width 0.6s var(--kd-ease);
+.g .seg.on{stroke:var(--kd-blue);}
+/* Animates opacity and glow rather than stroke-width, so the variants
+   keep their own weights (rings 2.4, clock 8) while it plays. */
+.g .seg.pop{animation:seg-pop 0.42s var(--kd-ease);}
+@keyframes seg-pop{
+  0%{opacity:0.45;}
+  40%{opacity:1;filter:drop-shadow(0 0 6px rgba(3,57,248,0.9));}
+  100%{opacity:1;filter:none;}
 }
+
+/* needle: the part that reads as a real instrument */
+.g .needle{
+  transform-origin:34px 34px;
+  transform:rotate(-130deg);
+  transition:transform 0.75s var(--kd-ease);
+}
+.g .needle line{
+  stroke:var(--kd-text);
+  stroke-width:1.6;
+  stroke-linecap:round;
+}
+.g .hub{fill:var(--kd-text);}
+.g-heat .needle line{stroke:var(--needle,#ff7a59);transition:stroke var(--kd-t-move) var(--kd-ease);}
+.g-heat .hub{fill:var(--needle,#ff7a59);transition:fill var(--kd-t-move) var(--kd-ease);}
+.g-heat .heat-track{fill:none;stroke-width:4;stroke-linecap:round;opacity:0.32;}
+.g-heat .tick{
+  stroke:var(--kd-surface-2);
+  stroke-width:1.6;
+  stroke-linecap:round;
+  transition:stroke var(--kd-t-fast) var(--kd-ease);
+}
+.g-heat .tick.on{stroke:var(--kd-muted);}
+
+.g-rings .seg{stroke-width:2.4;}
+.g-rings .core{fill:var(--kd-surface-2);transition:fill var(--kd-t-fast) var(--kd-ease);}
+.g-clock .seg{stroke-width:8;stroke-linecap:butt;}
+
+/* completing a section lights the instrument */
+.g.full .seg.on{filter:drop-shadow(0 0 4px rgba(3,57,248,0.85));}
+.g-rings.full .core{fill:var(--kd-blue);}
+.g.full .needle line{stroke:var(--kd-blue);}
+.g.full .hub{fill:var(--kd-blue);}
+.g-heat.full .heat-track{opacity:0.5;}
 
 /* ---------- checklist rows ---------- */
 .item{

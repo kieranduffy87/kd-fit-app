@@ -312,6 +312,122 @@ function checkMark(){
   return `<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.3 5.6 10.4 11.5 3.9"/></svg>`;
 }
 
+/* ============================================================
+   Section instruments
+
+   One gauge per section, all 68px, all on the house curve — but a
+   different mechanism each, so the column reads as an instrument
+   cluster instead of the same ring four times.
+
+     arc     segmented sweep + needle   physical output
+     rings   concentric, lighting inward   dialling in
+     clock   wedges closing a full circle  a day going round
+     heat    a needle running hot to cool  an inverse measure
+
+   Inflammation is the one gauge that isn't a fill: less is better, so
+   it runs coral to blue. That coral is the design system's expressive
+   accent, used here because the meaning needs a second hue — it is the
+   only non-blue in the app.
+   ============================================================ */
+const GAUGE_BY_SECTION = { body: 'arc', mind: 'rings', soul: 'clock', inflammation: 'heat' };
+function gaugeType(id){ return GAUGE_BY_SECTION[id] || 'arc'; }
+
+const G = 68, GC = G / 2;
+
+function polar(r, deg){
+  const a = (deg - 90) * Math.PI / 180;
+  return [GC + r * Math.cos(a), GC + r * Math.sin(a)];
+}
+function arcPath(r, a0, a1){
+  const [x0, y0] = polar(r, a0);
+  const [x1, y1] = polar(r, a1);
+  const large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+
+const ARC_SWEEP = 260, ARC_FROM = -130;
+
+function buildGauge(type, n, uid){
+  const seg = (from, sweep, gap, r) => {
+    const each = (sweep - gap * (n - 1)) / n;
+    return Array.from({ length: n }, (_, i) => {
+      const a0 = from + i * (each + gap);
+      return `<path class="seg" data-i="${i}" d="${arcPath(r, a0, a0 + each)}"/>`;
+    }).join('');
+  };
+
+  if(type === 'rings'){
+    const rings = Array.from({ length: n }, (_, i) =>
+      `<circle class="seg" data-i="${i}" cx="${GC}" cy="${GC}" r="${26 - i * (18 / Math.max(n, 1))}"/>`).join('');
+    return `<svg class="g g-rings" viewBox="0 0 ${G} ${G}" aria-hidden="true">
+      ${rings}<circle class="core" cx="${GC}" cy="${GC}" r="2.6"/></svg>`;
+  }
+
+  if(type === 'clock'){
+    return `<svg class="g g-clock" viewBox="0 0 ${G} ${G}" aria-hidden="true">
+      ${seg(0, 360, 5, 22)}</svg>`;
+  }
+
+  if(type === 'heat'){
+    // A needle with nothing to read it against is decoration, so the
+    // scale carries one tick per habit.
+    const ticks = Array.from({ length: n + 1 }, (_, i) => {
+      const deg = -104 + (208 / n) * i;
+      const [x0, y0] = polar(19.5, deg);
+      const [x1, y1] = polar(25.5, deg);
+      return `<line class="tick" data-i="${i}" x1="${x0.toFixed(2)}" y1="${y0.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${y1.toFixed(2)}"/>`;
+    }).join('');
+    return `<svg class="g g-heat" viewBox="0 0 ${G} ${G}" aria-hidden="true">
+      <defs><linearGradient id="h${uid}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#ff7a59"/><stop offset="1" stop-color="#0339f8"/>
+      </linearGradient></defs>
+      <path class="heat-track" d="${arcPath(24, -104, 104)}" stroke="url(#h${uid})"/>
+      ${ticks}
+      <g class="needle"><line x1="${GC}" y1="${GC}" x2="${GC}" y2="${GC - 19}"/></g>
+      <circle class="hub" cx="${GC}" cy="${GC}" r="2.6"/></svg>`;
+  }
+
+  return `<svg class="g g-arc" viewBox="0 0 ${G} ${G}" aria-hidden="true">
+    ${seg(ARC_FROM, ARC_SWEEP, 6, 24)}
+    <g class="needle"><line x1="${GC}" y1="${GC}" x2="${GC}" y2="${GC - 17}"/></g>
+    <circle class="hub" cx="${GC}" cy="${GC}" r="2.6"/></svg>`;
+}
+
+function syncGauge(node, type, done, total){
+  if(!node) return;
+  const svg = node.querySelector('.g');
+  if(!svg) return;
+  const ratio = total ? done / total : 0;
+
+  svg.querySelectorAll('.seg').forEach(s => {
+    // Rings light from the outside in; everything else in order.
+    const lit = +s.dataset.i < done;
+    if(lit && !s.classList.contains('on')){
+      s.classList.add('on', 'pop');
+      setTimeout(() => s.classList.remove('pop'), 420);
+    } else if(!lit){
+      s.classList.remove('on');
+    }
+  });
+
+  svg.querySelectorAll('.tick').forEach(t =>
+    t.classList.toggle('on', +t.dataset.i <= done));
+
+  const needle = svg.querySelector('.needle');
+  if(needle){
+    const deg = type === 'heat'
+      ? -104 + 208 * ratio
+      : ARC_FROM + ARC_SWEEP * ratio;
+    needle.style.transform = `rotate(${deg}deg)`;
+    if(type === 'heat'){
+      needle.style.setProperty('--needle',
+        `color-mix(in srgb, #0339f8 ${Math.round(ratio * 100)}%, #ff7a59)`);
+    }
+  }
+
+  svg.classList.toggle('full', total > 0 && done === total);
+}
+
 function tap(pattern){ if(navigator.vibrate) navigator.vibrate(pattern); }
 
 function toast(message){
@@ -342,10 +458,12 @@ function build(){
   const sections = config.daily.map((sec, i) => `
     <section class="card rise" style="animation-delay:${300 + i * 70}ms" data-section="${sec.id}">
       <div class="card-head">
-        <h2 class="card-title">${escapeHtml(sec.title)}</h2>
-        <div class="card-count" data-count>0/${sec.items.length}</div>
+        <div class="card-headings">
+          <h2 class="card-title">${escapeHtml(sec.title)}</h2>
+          <div class="card-count" data-count>0/${sec.items.length}</div>
+        </div>
+        <div class="gauge" data-gauge>${buildGauge(gaugeType(sec.id), sec.items.length, sec.id)}</div>
       </div>
-      <div class="card-meter"><i data-meter></i></div>
       ${sec.items.map(it => `
         <div class="item" data-id="${it.id}" role="checkbox" aria-checked="false" tabindex="0">
           <div class="box">${checkMark()}</div>
@@ -425,10 +543,14 @@ function build(){
 
     <section class="card rise" style="animation-delay:${delay}ms" data-training>
       <div class="card-head">
-        <h2 class="card-title">Training</h2>
-        <div class="card-count" data-week-count>0/0 this week</div>
+        <div class="card-headings">
+          <h2 class="card-title">Training</h2>
+          <div class="card-count" data-week-count>0/0 this week</div>
+        </div>
+        <div class="gauge" data-week-gauge>${
+          buildGauge('arc', config.training.reduce((n, t) => n + t.target, 0) || 1, 'train')
+        }</div>
       </div>
-      <div class="card-meter"><i data-week-meter></i></div>
       ${trainingRows}
     </section>
 
@@ -466,7 +588,7 @@ function build(){
   el.notifStatus = document.querySelector('[data-notif-status]');
   el.note = document.querySelector('[data-note]');
   el.weekCount = document.querySelector('[data-week-count]');
-  el.weekMeter = document.querySelector('[data-week-meter]');
+  el.weekGauge = document.querySelector('[data-week-gauge]');
   el.items = Array.from(document.querySelectorAll('.item'));
   el.trains = Array.from(document.querySelectorAll('.train'));
 
@@ -563,7 +685,7 @@ function sync(){
     if(!card) return;
     const n = sec.items.filter(it => today[it.id]).length;
     card.querySelector('[data-count]').textContent = `${n}/${sec.items.length}`;
-    card.querySelector('[data-meter]').style.width = `${(n / sec.items.length) * 100}%`;
+    syncGauge(card.querySelector('[data-gauge]'), gaugeType(sec.id), n, sec.items.length);
   });
 
   el.items.forEach(node => {
@@ -576,7 +698,7 @@ function sync(){
   const week = trainingWeek();
   const prog = trainingProgress(week);
   el.weekCount.textContent = `${prog.hit}/${prog.target} this week`;
-  el.weekMeter.style.width = `${prog.ratio * 100}%`;
+  syncGauge(el.weekGauge, 'arc', prog.hit, prog.target);
 
   el.trains.forEach(node => {
     const t = week.find(x => x.id === node.dataset.id);

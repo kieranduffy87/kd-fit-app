@@ -48,7 +48,18 @@ and the rise-and-unblur primitive, so it settles rather than bounces.
 - **The dial is the screen.** The number is days to 40; the ring around it is
   today, closing as you log. Finish the day and the ring shuts, the glow lifts
   and the caption turns blue.
-- **Blue stays scarce** — the accent word, the ring, the checks.
+- **Every section has its own instrument.** Four mechanisms rather than the
+  same ring four times: Body is a segmented sweep with a needle (output), Mind
+  is concentric rings lighting inward (dialling in), Soul is wedges closing a
+  circle (a day going round), Inflammation is a needle running hot to cool.
+  Training reuses the sweep against the weekly target. All SVG — three.js would
+  have cost more than the whole app for a checklist, and this stays sharp at any
+  size and animates on the GPU.
+- **Blue stays scarce** — the accent word, the ring, the checks. The one
+  exception is the Inflammation gauge, which runs coral (`--kd-coral`, the
+  system's expressive accent) to blue, because less is better there and a fill
+  would read backwards. It is the only non-blue in the app; drop the gradient
+  in `css/app.css` if you'd rather keep the palette absolutely pure.
 - **Art is generative**, not photographic: a deep-blue bloom on Scrim Ink under a
   film-grain overlay, drawn in CSS and SVG. Sharp at any size, a couple of KB,
   works offline.
