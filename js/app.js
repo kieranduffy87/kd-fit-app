@@ -20,7 +20,7 @@
    The private half goes in the repo's Actions secrets, never here.
    See README → "Daily reminders".
    ------------------------------------------------------------ */
-const VAPID_PUBLIC_KEY = '';
+const VAPID_PUBLIC_KEY = 'BBLYVuuQkywQrxEiB1nQnS7hI3cFVRXuT2Y6CSQaePPydevHNR0FvuKG1ojoRC335cNKOD4sVwK03WBzGsDO3Ic';
 
 /* Daily levers with reasonable evidence behind them for inflammatory
    load — diet pattern, alcohol, and the overnight fast. Deliberately
