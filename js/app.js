@@ -504,10 +504,13 @@ function build(){
           <circle class="dial-prog" cx="140" cy="140" r="${R}" data-prog
                   stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}"/>
         </svg>
-        <div class="dial-face">
+        <div class="dial-face" data-face>
           <div class="dial-num num" data-days>${REDUCED_MOTION ? daysUntilBirthday() : 0}</div>
           <div class="dial-unit">Days to <em>40.</em></div>
           <div class="dial-date">${bday.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })}</div>
+        </div>
+        <div class="dial-seal" data-seal>
+          <svg viewBox="-100 -100 200 200" data-mark3d aria-hidden="true"></svg>
         </div>
       </div>
       <div class="dial-status" data-status></div>
@@ -679,6 +682,7 @@ function sync(){
 
   el.status.textContent = complete ? 'Day complete' : `Today ${done}/${total}`;
   document.body.classList.toggle('is-complete', complete);
+  syncSeal(complete);
 
   config.daily.forEach(sec => {
     const card = document.querySelector(`[data-section="${sec.id}"]`);
@@ -732,6 +736,51 @@ function sync(){
   syncNotifStatus();
 }
 
+/* ---------- the completion seal ----------
+   Close the day and the countdown gives way to the mark, extruded and
+   turning. Tap the dial to swap back to the number. It only renders
+   while the day is complete and the tab is visible — an idle animation
+   nobody is looking at is just battery. */
+let mark3d = null;
+let sealOn = false;
+
+function syncSeal(complete){
+  const dial = document.querySelector('.dial');
+  if(!dial) return;
+  const show = complete && sealOn;
+  dial.classList.toggle('show-seal', show);
+
+  if(!show){
+    if(mark3d) mark3d.stop();
+    return;
+  }
+  if(!mark3d){
+    const svg = document.querySelector('[data-mark3d]');
+    if(!svg || !window.KDMark3D) return;
+    mark3d = window.KDMark3D.create(svg);
+  }
+  if(REDUCED_MOTION) mark3d.still();
+  else mark3d.start();
+}
+
+function wireSeal(){
+  const dial = document.querySelector('.dial');
+  if(!dial) return;
+  sealOn = true;
+  dial.addEventListener('click', () => {
+    if(!document.body.classList.contains('is-complete')) return;
+    sealOn = !sealOn;
+    syncSeal(true);
+    tap(10);
+  });
+}
+
+document.addEventListener('visibilitychange', () => {
+  if(!mark3d) return;
+  if(document.hidden) mark3d.stop();
+  else syncSeal(document.body.classList.contains('is-complete'));
+});
+
 function syncNotifStatus(){
   if(!el.notifStatus) return;
   if(!NOTIF_SUPPORTED){ el.notifStatus.textContent = 'Not supported in this browser'; return; }
@@ -777,6 +826,8 @@ function wire(){
 
   document.querySelectorAll('[data-settings]').forEach(b =>
     b.addEventListener('click', openSheet));
+
+  wireSeal();
 
   document.querySelectorAll('[data-view]').forEach(b =>
     b.addEventListener('click', () => {
