@@ -1,16 +1,24 @@
-const CACHE = 'kd-fit-v2';
+const CACHE = 'kd-fit-v3';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './css/app.css',
+  './js/app.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './icons/favicon.svg',
   './fonts/instrument-sans-0.woff2',
   './fonts/instrument-sans-1.woff2'
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  // One missing asset must not fail the whole install.
+  e.waitUntil(
+    caches.open(CACHE).then((c) =>
+      Promise.allSettled(ASSETS.map((a) => c.add(a)))
+    )
+  );
   self.skipWaiting();
 });
 
@@ -24,8 +32,8 @@ self.addEventListener('activate', (e) => {
 });
 
 // Navigations go network-first so a deploy shows up on the next launch;
-// the cached shell is the fallback when offline. Everything else is
-// cache-first — fonts and icons don't change without a cache bump.
+// the cached shell is the offline fallback. Everything else is
+// cache-first — fonts, icons and art don't change without a cache bump.
 self.addEventListener('fetch', (e) => {
   if (e.request.mode === 'navigate') {
     e.respondWith(
@@ -45,8 +53,7 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-// Local notification trigger (fired via postMessage from the app,
-// or by a push event once a real push backend is wired up)
+// Local notification, posted by the app.
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const { title, body } = event.data;
@@ -69,14 +76,16 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Real remote push (works once you add a push server — see README)
+// The daily reminder from the scheduled GitHub Action.
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : { title: '40', body: 'Log today.' };
+  let data = { title: '40', body: 'Log the day before it resets.' };
+  try { if (event.data) data = event.data.json(); } catch (e) { /* keep default */ }
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: 'icons/icon-192.png',
-      badge: 'icons/icon-192.png'
+      badge: 'icons/icon-192.png',
+      tag: 'kd-fit-reminder'
     })
   );
 });

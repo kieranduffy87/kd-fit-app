@@ -1,0 +1,31 @@
+name: Daily reminder
+
+on:
+  schedule:
+    # 07:30 UTC. GitHub's scheduler is best-effort and can run late by
+    # several minutes — fine for a nudge, not for an alarm. Note this is
+    # UTC, so it lands an hour later in Irish summer time.
+    - cron: '30 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    # Without a subscription secret there is nothing to send to, so skip
+    # rather than fail every morning.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.REMINDERS_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install web-push@3
+
+      - run: node scripts/send-push.mjs
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          PUSH_SUBSCRIPTION: ${{ secrets.PUSH_SUBSCRIPTION }}

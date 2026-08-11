@@ -14,930 +14,107 @@
 <meta name="apple-mobile-web-app-title" content="40">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preload" href="fonts/instrument-sans-0.woff2" as="font" type="font/woff2" crossorigin>
+
+<!-- The splash is inlined so it paints on the first frame, before
+     app.css has even been requested. Everything else can wait. -->
 <style>
-  /* ============================================================
-     Instrument Sans — self-hosted, so the app renders on brand
-     offline and on first paint. From kd-design-system/fonts.
-     ============================================================ */
   @font-face{
     font-family:'Instrument Sans'; font-style:normal; font-weight:400 700;
     font-display:swap; src:url(fonts/instrument-sans-0.woff2) format('woff2');
     unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
   }
-  @font-face{
-    font-family:'Instrument Sans'; font-style:normal; font-weight:400 700;
-    font-display:swap; src:url(fonts/instrument-sans-1.woff2) format('woff2');
-    unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-  }
-
-  /* ============================================================
-     KD tokens — Night Studio. Mirrors kd-design-system/tokens.css.
-     ============================================================ */
-  :root{
-    --kd-blue:#0339f8;
-    --kd-blue-deep:#01145a;
-    --kd-ink:#0a0b0e;
-    --kd-paper-white:#f4f4f6;
-    --kd-error:#c62f2f;
-
-    --kd-bg:#08090b;
-    --kd-text:#eceef2;
-    --kd-muted:#8f939d;
-    --kd-line:rgba(236,238,242,0.13);
-    --kd-surface:#101216;
-    --kd-surface-2:#16181d;
-
-    --kd-font:'Instrument Sans','Helvetica Neue',Arial,sans-serif;
-    --kd-fs-label:0.72rem;
-    --kd-fs-tag:0.62rem;
-    --kd-track-display:-0.02em;
-    --kd-track-label:0.14em;
-
-    --kd-radius:18px;
-    --kd-radius-sm:14px;
-    --kd-radius-xs:10px;
-    --kd-pill:100px;
-
-    --kd-ease:cubic-bezier(0.22,0.7,0.2,1);
-    --kd-t-fast:0.25s;
-    --kd-t-move:0.35s;
-    --kd-t-reveal:0.9s;
-
-    --kd-pad:clamp(1.25rem,5vw,2.5rem);
-  }
-
-  *,*::before,*::after{box-sizing:border-box;}
-
-  html{
-    background:var(--kd-bg);
-    /* keeps the ink behind the status bar when installed */
-    height:100%;
-  }
-  body{
-    margin:0;
-    min-height:100%;
-    background:var(--kd-bg);
-    color:var(--kd-text);
-    font-family:var(--kd-font);
-    font-size:1.0625rem;
-    line-height:1.65;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    -webkit-tap-highlight-color:transparent;
-    overscroll-behavior-y:none;
-    text-rendering:optimizeLegibility;
-  }
-  .shell{
-    position:relative;
-    z-index:1;
-    max-width:520px;
-    margin:0 auto;
-    padding:
-      calc(1.5rem + env(safe-area-inset-top))
-      calc(var(--kd-pad) + env(safe-area-inset-right))
-      calc(3rem + env(safe-area-inset-bottom))
-      calc(var(--kd-pad) + env(safe-area-inset-left));
-  }
-  ::selection{background:var(--kd-blue);color:#fff;}
-
-  /* ============================================================
-     Ambient art — a deep-blue bloom on scrim ink, with film
-     grain over it. Generative, so it stays crisp at any size,
-     costs ~2KB, and works offline.
-     ============================================================ */
-  .ambient{
+  html,body{margin:0;padding:0;background:#08090b;}
+  #splash{
     position:fixed;
     inset:0;
-    z-index:0;
-    pointer-events:none;
-    background:
-      radial-gradient(ellipse 80% 50% at 50% -8%, rgba(3,57,248,0.30), transparent 62%),
-      radial-gradient(ellipse 60% 40% at 88% 12%, rgba(1,20,90,0.55), transparent 70%),
-      radial-gradient(ellipse 90% 55% at 10% 104%, rgba(3,57,248,0.10), transparent 68%),
-      linear-gradient(180deg,#0a0f22 0%,var(--kd-bg) 46%);
-    transition:opacity 1.2s var(--kd-ease);
+    z-index:100;
+    display:grid;
+    place-content:center;
+    justify-items:center;
+    gap:1.1rem;
+    background:#08090b;
+    transition:opacity 0.55s cubic-bezier(0.22,0.7,0.2,1);
   }
-  .ambient::after{
-    content:'';
+  #splash.out{opacity:0;pointer-events:none;}
+  #splash .splash-art{
     position:absolute;
     inset:0;
-    opacity:0.05;
-    mix-blend-mode:overlay;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-  /* the bloom lifts when the day is complete */
-  body.is-complete .ambient{opacity:1.35;}
-
-  /* ---------- type roles ---------- */
-  .label{
-    font-size:var(--kd-fs-label);
-    font-weight:500;
-    letter-spacing:var(--kd-track-label);
-    text-transform:uppercase;
-    color:var(--kd-muted);
-    line-height:1.4;
-  }
-  .num{font-variant-numeric:tabular-nums;letter-spacing:var(--kd-track-display);}
-
-  /* ---------- masthead ---------- */
-  .masthead{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:1rem;
-    margin-bottom:2.5rem;
-  }
-  .brand{display:flex;align-items:center;gap:0.7rem;min-width:0;}
-  .brand svg{width:22px;height:auto;display:block;flex:none;}
-  .brand .label{color:var(--kd-text);}
-
-  /* ============================================================
-     Hero — the countdown sits inside a ring that closes as the
-     day gets logged. One number to aim at, one ring to close.
-     ============================================================ */
-  .hero{
-    position:relative;
-    display:grid;
-    place-items:center;
-    margin-bottom:2.25rem;
-  }
-  .dial{
-    position:relative;
-    width:min(74vw,300px);
-    aspect-ratio:1;
-    display:grid;
-    place-items:center;
-  }
-  .dial svg{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    transform:rotate(-90deg);
-    overflow:visible;
-  }
-  .dial-track{
-    fill:none;
-    stroke:var(--kd-line);
-    stroke-width:2;
-  }
-  .dial-prog{
-    fill:none;
-    stroke:var(--kd-blue);
-    stroke-width:5;
-    stroke-linecap:round;
-    transition:stroke-dashoffset 0.75s var(--kd-ease);
-  }
-  .dial-glow{
-    fill:none;
-    stroke:var(--kd-blue);
-    stroke-width:9;
-    stroke-linecap:round;
-    filter:blur(9px);
-    opacity:0.5;
-    transition:stroke-dashoffset 0.75s var(--kd-ease),opacity var(--kd-t-move) var(--kd-ease);
-  }
-  .dial-face{
-    position:relative;
-    text-align:center;
-    display:grid;
-    gap:0.1rem;
-    padding:0 1rem;
-  }
-  .dial-num{
-    font-size:clamp(4.25rem,19vw,5.75rem);
-    font-weight:500;
-    line-height:0.92;
-  }
-  .dial-unit{
-    font-size:1.05rem;
-    font-weight:500;
-    letter-spacing:-0.01em;
-    color:var(--kd-text);
-  }
-  .dial-unit em{font-style:normal;color:var(--kd-blue);}
-  .dial-date{
-    font-size:var(--kd-fs-tag);
-    letter-spacing:var(--kd-track-label);
-    text-transform:uppercase;
-    color:var(--kd-muted);
-    margin-top:0.45rem;
-  }
-  .dial-status{
-    margin-top:0.5rem;
-    font-size:var(--kd-fs-label);
-    font-weight:500;
-    letter-spacing:var(--kd-track-label);
-    text-transform:uppercase;
-    color:var(--kd-muted);
-    transition:color var(--kd-t-fast) ease;
-  }
-  body.is-complete .dial-status{color:var(--kd-blue);}
-  body.is-complete .dial-glow{opacity:0.85;}
-
-  /* ---------- stats ---------- */
-  .stats{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    border-top:1px solid var(--kd-line);
-    border-bottom:1px solid var(--kd-line);
-    margin-bottom:2rem;
-  }
-  .stat{
-    text-align:center;
-    padding:1.15rem 0.5rem;
-    position:relative;
-  }
-  .stat + .stat::before{
-    content:'';
-    position:absolute;
-    left:0;top:22%;bottom:22%;
-    width:1px;
-    background:var(--kd-line);
-  }
-  .stat-num{
-    font-size:1.75rem;
-    font-weight:500;
-    line-height:1.1;
-  }
-  .stat-num small{font-size:0.9rem;font-weight:500;color:var(--kd-muted);margin-left:0.05em;}
-  .stat-cap{
-    font-size:var(--kd-fs-tag);
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-    color:var(--kd-muted);
-    margin-top:0.25rem;
-  }
-
-  /* ---------- 28-day ledger ---------- */
-  .ledger{margin-bottom:2rem;}
-  .ledger-head{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    margin-bottom:0.85rem;
-  }
-  .tally-row{
-    display:grid;
-    grid-template-columns:repeat(28,1fr);
-    gap:3px;
-    height:34px;
-  }
-  .tally{
-    align-self:end;
-    width:100%;
-    height:38%;
-    border-radius:3px;
-    background:var(--kd-surface-2);
-    transform-origin:bottom;
-    transition:height 0.5s var(--kd-ease),background var(--kd-t-fast) var(--kd-ease);
-  }
-  .tally.partial{background:rgba(3,57,248,0.38);}
-  .tally.full{background:var(--kd-blue);}
-  .tally.today{box-shadow:0 0 0 1.5px var(--kd-bg),0 0 0 3px var(--kd-blue);}
-
-  /* ---------- cards ---------- */
-  .card{
     background:
-      linear-gradient(180deg,rgba(236,238,242,0.028),transparent 45%),
-      var(--kd-surface);
-    border:1px solid var(--kd-line);
-    border-radius:var(--kd-radius);
-    padding:1.35rem 1.35rem 0.5rem;
-    margin-bottom:1rem;
-    overflow:hidden;
+      radial-gradient(ellipse 70% 45% at 50% 34%, rgba(3,57,248,0.26), transparent 66%),
+      linear-gradient(180deg,#0a0f22,#08090b 62%);
+    background-size:cover;
+    background-position:center;
+    opacity:0;
+    animation:splash-art 1.6s cubic-bezier(0.22,0.7,0.2,1) forwards;
   }
-  .card-head{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:1rem;
+  @keyframes splash-art{to{opacity:1;}}
+  #splash .splash-mark{
+    position:relative;
+    width:64px;
+    opacity:0;
+    transform:translateY(1.25rem);
+    filter:blur(8px);
+    animation:splash-in 0.9s cubic-bezier(0.22,0.7,0.2,1) 0.1s forwards;
   }
-  .card-title{
-    font-size:1.1rem;
-    font-weight:600;
-    letter-spacing:-0.01em;
-    line-height:1.3;
-  }
-  .card-count{
-    font-size:var(--kd-fs-tag);
-    letter-spacing:0.1em;
+  #splash .splash-mark svg{width:100%;height:auto;display:block;}
+  #splash .splash-word{
+    position:relative;
+    font-family:'Instrument Sans','Helvetica Neue',Arial,sans-serif;
+    font-size:0.72rem;
+    font-weight:500;
+    letter-spacing:0.14em;
     text-transform:uppercase;
-    color:var(--kd-muted);
-    font-variant-numeric:tabular-nums;
-    white-space:nowrap;
+    color:#8f939d;
+    opacity:0;
+    transform:translateY(1rem);
+    filter:blur(6px);
+    animation:splash-in 0.9s cubic-bezier(0.22,0.7,0.2,1) 0.26s forwards;
   }
-  .card-meter{
+  @keyframes splash-in{to{opacity:1;transform:none;filter:blur(0);}}
+  #splash .splash-bar{
+    position:relative;
+    width:104px;
     height:2px;
     border-radius:2px;
-    background:var(--kd-line);
-    margin:0.85rem 0 0.35rem;
+    background:rgba(236,238,242,0.13);
     overflow:hidden;
   }
-  .card-meter i{
+  #splash .splash-bar i{
     display:block;
     height:100%;
-    width:0;
-    border-radius:2px;
-    background:var(--kd-blue);
-    transition:width 0.6s var(--kd-ease);
-  }
-
-  /* ---------- checklist rows ---------- */
-  .item{
-    display:flex;
-    align-items:center;
-    gap:0.9rem;
-    padding:0.85rem 0.1rem;
-    border-top:1px solid var(--kd-line);
-    cursor:pointer;
-    user-select:none;
-    -webkit-user-select:none;
-    touch-action:manipulation;
-    transition:opacity var(--kd-t-fast) ease;
-  }
-  .item:first-of-type{border-top:none;}
-  .item:active{opacity:0.65;}
-  .box{
-    position:relative;
-    width:24px;height:24px;flex:none;
-    border:1.5px solid var(--kd-muted);
-    border-radius:8px;
-    display:grid;
-    place-items:center;
-    transition:
-      background var(--kd-t-fast) var(--kd-ease),
-      border-color var(--kd-t-fast) var(--kd-ease),
-      transform var(--kd-t-move) var(--kd-ease);
-  }
-  .box svg{width:13px;height:13px;display:block;}
-  .box path{
-    stroke:var(--kd-paper-white);
-    stroke-width:2.2;
-    stroke-linecap:round;
-    stroke-linejoin:round;
-    fill:none;
-    stroke-dasharray:16;
-    stroke-dashoffset:16;
-    transition:stroke-dashoffset 0.32s var(--kd-ease);
-  }
-  .item.done .box{background:var(--kd-blue);border-color:var(--kd-blue);}
-  .item.done .box path{stroke-dashoffset:0;}
-  .item.just-done .box{animation:kd-press 0.4s var(--kd-ease);}
-  @keyframes kd-press{
-    0%{transform:scale(1);}
-    38%{transform:scale(0.86);}
-    100%{transform:scale(1);}
-  }
-  .item-label{
-    font-size:0.97rem;
-    line-height:1.4;
-    transition:color var(--kd-t-fast) ease;
-  }
-  .item.done .item-label{color:var(--kd-muted);}
-
-  /* ---------- training chips ---------- */
-  .chip-row{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:0.55rem;
-    padding:0.9rem 0 1rem;
-  }
-  .chip{
-    position:relative;
-    overflow:hidden;
-    padding:0.8rem 1rem;
-    border-radius:var(--kd-pill);
-    border:1px solid var(--kd-line);
-    background:var(--kd-surface-2);
-    color:var(--kd-muted);
-    font-family:inherit;
-    font-size:0.8rem;
-    font-weight:500;
-    letter-spacing:0.01em;
-    text-align:center;
-    cursor:pointer;
-    touch-action:manipulation;
-    transition:color var(--kd-t-fast) var(--kd-ease),border-color var(--kd-t-fast) var(--kd-ease);
-  }
-  /* Four chips lit at once would flood the screen with blue, so an
-     active chip is a tint and a border, not a fill. Blue stays scarce. */
-  .chip::before{
-    content:'';
-    position:absolute;
-    inset:0;
-    background:rgba(3,57,248,0.16);
+    width:100%;
+    background:#0339f8;
     transform:scaleX(0);
     transform-origin:left;
-    transition:transform var(--kd-t-move) var(--kd-ease);
+    animation:splash-bar 1.15s cubic-bezier(0.22,0.7,0.2,1) 0.3s forwards;
   }
-  .chip span{position:relative;}
-  .chip.is-active{color:var(--kd-text);border-color:var(--kd-blue);}
-  .chip.is-active::before{transform:scaleX(1);}
-  .chip:active{transform:scale(0.98);}
-
-  /* ---------- reminders ---------- */
-  .remind{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:1rem;
-    padding:1.1rem 1.35rem;
-    background:var(--kd-surface);
-    border:1px solid var(--kd-line);
-    border-radius:var(--kd-radius);
-    margin-bottom:1rem;
-  }
-  .remind-copy{min-width:0;}
-  .remind-title{font-size:0.97rem;font-weight:600;letter-spacing:-0.01em;}
-  .remind-status{font-size:var(--kd-fs-tag);color:var(--kd-muted);letter-spacing:0.04em;margin-top:0.1rem;}
-  .btn{
-    flex:none;
-    padding:0.62rem 1.15rem;
-    border-radius:var(--kd-pill);
-    border:1px solid var(--kd-line);
-    background:transparent;
-    color:var(--kd-text);
-    font-family:inherit;
-    font-size:0.78rem;
-    font-weight:600;
-    letter-spacing:0.01em;
-    cursor:pointer;
-    touch-action:manipulation;
-    transition:border-color var(--kd-t-fast) var(--kd-ease),color var(--kd-t-fast) var(--kd-ease),opacity var(--kd-t-fast) ease;
-  }
-  .btn:hover{border-color:var(--kd-muted);}
-  .btn:active{opacity:0.7;}
-  .btn.is-on{border-color:var(--kd-blue);color:var(--kd-blue);}
-  .btn:disabled{opacity:0.35;pointer-events:none;}
-
-  /* ---------- footer ---------- */
-  .footer{
-    text-align:center;
-    margin-top:2.5rem;
-    padding-top:1.75rem;
-    border-top:1px solid var(--kd-line);
-  }
-  .footer .label{letter-spacing:0.16em;}
-  .footer svg{width:16px;height:auto;margin-bottom:0.85rem;opacity:0.55;}
-
-  /* ---------- focus ---------- */
-  :focus-visible{outline:3px solid var(--kd-blue);outline-offset:3px;border-radius:6px;}
-
-  /* ============================================================
-     Motion — rise + unblur on the house curve. It settles, it
-     never bounces.
-     ============================================================ */
-  @keyframes kd-rise{
-    from{opacity:0;transform:translateY(1.75rem);filter:blur(6px);}
-    to{opacity:1;transform:none;filter:blur(0);}
-  }
-  .rise{animation:kd-rise var(--kd-t-reveal) var(--kd-ease) both;}
-  @keyframes kd-tally-in{
-    from{height:0;opacity:0;}
-  }
-
+  @keyframes splash-bar{to{transform:scaleX(1);}}
   @media (prefers-reduced-motion:reduce){
-    *,*::before,*::after{
-      animation-duration:0.01ms !important;
-      animation-iteration-count:1 !important;
-      transition-duration:0.01ms !important;
+    #splash .splash-art,#splash .splash-mark,#splash .splash-word,#splash .splash-bar i{
+      animation:none;opacity:1;transform:none;filter:none;
     }
-    .rise{animation:none;opacity:1;transform:none;filter:none;}
   }
 </style>
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
+<div id="splash">
+  <div class="splash-art"></div>
+  <div class="splash-mark">
+    <svg viewBox="0 0 18.62 11.73" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <polygon fill="#0339f8" points="18.62 0 12 0 6 5.86 12 11.73 18.62 11.73 12.62 5.86 18.62 0"/>
+      <polygon fill="#eceef2" points="0 0 0 11.72 6 5.86 0 0"/>
+    </svg>
+  </div>
+  <div class="splash-word">Performance Log</div>
+  <div class="splash-bar"><i></i></div>
+</div>
+
 <div class="ambient" aria-hidden="true"></div>
 <main class="shell" id="app"></main>
+<div class="sheet" id="sheet" hidden></div>
 
-<script>
-/* ============================================================
-   40 — KD Performance Log
-   Data model and storage keys are unchanged from v1, so any
-   history already logged on the device carries straight over.
-   ============================================================ */
-
-const BIRTHDAY = new Date(2027, 4, 7); // 7 May 2027 — month is 0-indexed
-
-const CHECKLIST = {
-  body: { title: "Body", items: [
-    { id: "walk", label: "Morning walk — 10+ min outside" },
-    { id: "protein", label: "Protein at first meal" },
-    { id: "water", label: "Water before coffee" }
-  ]},
-  mind: { title: "Mind", items: [
-    { id: "task", label: "One task done before phone" },
-    { id: "noinput", label: "5 min no-input" }
-  ]},
-  soul: { title: "Soul", items: [
-    { id: "sleep", label: "Fixed sleep / wake time" },
-    { id: "lookforward", label: "One thing to look forward to" }
-  ]}
-};
-
-const TRAINING = [
-  { id: "lift1", label: "Lift 1" },
-  { id: "lift2", label: "Lift 2" },
-  { id: "football", label: "Football" },
-  { id: "mobility", label: "Mobility" }
-];
-
-const HISTORY_DAYS = 28;
-const GOOD_DAY = 0.7; // share of the list that counts a day as logged
-
-const KD_MARK = `<svg viewBox="0 0 18.62 11.73" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon fill="#0339f8" points="18.62 0 12 0 6 5.86 12 11.73 18.62 11.73 12.62 5.86 18.62 0"/><polygon fill="#eceef2" points="0 0 0 11.72 6 5.86 0 0"/></svg>`;
-
-const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
-const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/* ---------- dates ---------- */
-function dayKey(d = new Date()){
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function daysUntil(target){
-  const now = new Date();
-  const a = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const b = new Date(target.getFullYear(), target.getMonth(), target.getDate());
-  return Math.round((b - a) / 86400000);
-}
-
-/* ---------- storage ---------- */
-function getEntry(key){
-  try{
-    const raw = localStorage.getItem(`kd-fit:${key}`);
-    return raw ? JSON.parse(raw) : {};
-  }catch(e){ return {}; }
-}
-function setEntry(key, data){
-  try{ localStorage.setItem(`kd-fit:${key}`, JSON.stringify(data)); }
-  catch(e){ /* private mode / quota — the session still works */ }
-}
-
-const TOTAL = TRAINING.length +
-  Object.values(CHECKLIST).reduce((n, s) => n + s.items.length, 0);
-
-let today = getEntry(dayKey());
-
-function doneCount(entry){
-  return Object.values(entry).filter(Boolean).length;
-}
-
-/* ---------- history ---------- */
-function history(){
-  const days = [];
-  const now = new Date();
-  for(let i = HISTORY_DAYS - 1; i >= 0; i--){
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const key = dayKey(d);
-    days.push({ key, date: d, checked: doneCount(getEntry(key)) });
-  }
-  return days;
-}
-
-// Yesterday backwards — today is still in play, so it can't break a streak.
-function streakOf(days){
-  let s = 0;
-  for(let i = days.length - 2; i >= 0; i--){
-    if(days[i].checked >= Math.ceil(TOTAL * GOOD_DAY)) s++;
-    else break;
-  }
-  return s;
-}
-
-function bestStreakOf(days){
-  let best = 0, run = 0;
-  days.forEach(d => {
-    if(d.checked >= Math.ceil(TOTAL * GOOD_DAY)){ run++; best = Math.max(best, run); }
-    else run = 0;
-  });
-  return best;
-}
-
-function consistencyOf(days){
-  const good = days.filter(d => d.checked >= Math.ceil(TOTAL * GOOD_DAY)).length;
-  return Math.round((good / days.length) * 100);
-}
-
-/* ---------- ring geometry ---------- */
-const R = 128;
-const CIRC = 2 * Math.PI * R;
-
-function checkMark(){
-  return `<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.3 5.6 10.4 11.5 3.9"/></svg>`;
-}
-
-/* ---------- notifications ---------- */
-function notifStatus(){
-  if(!NOTIF_SUPPORTED) return 'Not supported in this browser';
-  if(Notification.permission === 'granted') return 'On — reminders can show';
-  if(Notification.permission === 'denied') return 'Blocked — enable in Settings';
-  return 'Off — daily nudge to log the day';
-}
-
-async function showNotification(title, body){
-  if(!navigator.serviceWorker) return;
-  const reg = await navigator.serviceWorker.ready;
-  if(reg.active) reg.active.postMessage({ type: 'SHOW_NOTIFICATION', title, body });
-}
-
-async function onNotifClick(){
-  if(!NOTIF_SUPPORTED) return;
-  if(Notification.permission === 'granted'){
-    showNotification('40', 'Log today before it resets.');
-    return;
-  }
-  await Notification.requestPermission();
-  syncNotif();
-}
-
-/* ---------- haptics ---------- */
-function tap(pattern){
-  if(navigator.vibrate) navigator.vibrate(pattern);
-}
-
-/* ============================================================
-   Build the view once, then patch it in place. Rebuilding the
-   DOM on every tap is what makes a web app feel like a web app;
-   patching lets the ring, meters and checks animate properly.
-   ============================================================ */
-const el = {};
-
-function build(){
-  const days = daysUntil(BIRTHDAY);
-
-  const sections = Object.entries(CHECKLIST).map(([key, sec], i) => `
-    <section class="card rise" style="animation-delay:${260 + i * 70}ms" data-section="${key}">
-      <div class="card-head">
-        <h2 class="card-title">${sec.title}</h2>
-        <div class="card-count" data-count>0/${sec.items.length}</div>
-      </div>
-      <div class="card-meter"><i data-meter></i></div>
-      ${sec.items.map(it => `
-        <div class="item" data-id="${it.id}" role="checkbox" aria-checked="false" tabindex="0">
-          <div class="box">${checkMark()}</div>
-          <div class="item-label">${it.label}</div>
-        </div>`).join('')}
-    </section>`).join('');
-
-  document.getElementById('app').innerHTML = `
-    <header class="masthead rise">
-      <div class="brand">
-        ${KD_MARK}
-        <div class="label">Performance Log</div>
-      </div>
-      <div class="label" data-today-date>${new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })}</div>
-    </header>
-
-    <div class="hero rise" style="animation-delay:60ms">
-      <div class="dial">
-        <svg viewBox="0 0 280 280" aria-hidden="true">
-          <circle class="dial-track" cx="140" cy="140" r="${R}"/>
-          <circle class="dial-glow" cx="140" cy="140" r="${R}" data-glow
-                  stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}"/>
-          <circle class="dial-prog" cx="140" cy="140" r="${R}" data-prog
-                  stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}"/>
-        </svg>
-        <div class="dial-face">
-          <div class="dial-num num" data-days>${REDUCED_MOTION ? days : 0}</div>
-          <div class="dial-unit">Days to <em>40.</em></div>
-          <div class="dial-date">${BIRTHDAY.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })}</div>
-        </div>
-      </div>
-      <div class="dial-status" data-status>Today 0/${TOTAL}</div>
-    </div>
-
-    <div class="stats rise" style="animation-delay:140ms">
-      <div class="stat">
-        <div class="stat-num num" data-streak>0</div>
-        <div class="stat-cap">Day streak</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num num" data-consistency>0<small>%</small></div>
-        <div class="stat-cap">28-day rate</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num num" data-best>0</div>
-        <div class="stat-cap">Best run</div>
-      </div>
-    </div>
-
-    <section class="ledger rise" style="animation-delay:200ms">
-      <div class="ledger-head">
-        <div class="label">Last 28 days</div>
-        <div class="label" data-ledger-note></div>
-      </div>
-      <div class="tally-row" data-tally></div>
-    </section>
-
-    ${sections}
-
-    <section class="card rise" style="animation-delay:${260 + Object.keys(CHECKLIST).length * 70}ms">
-      <div class="card-head">
-        <h2 class="card-title">Training</h2>
-        <div class="card-count" data-count>0/${TRAINING.length}</div>
-      </div>
-      <div class="card-meter"><i data-meter></i></div>
-      <div class="chip-row">
-        ${TRAINING.map(t => `
-          <button class="chip" type="button" data-id="${t.id}" role="checkbox" aria-checked="false">
-            <span>${t.label}</span>
-          </button>`).join('')}
-      </div>
-    </section>
-
-    <div class="remind rise" style="animation-delay:${300 + Object.keys(CHECKLIST).length * 70}ms">
-      <div class="remind-copy">
-        <div class="remind-title">Reminders</div>
-        <div class="remind-status" data-notif-status>${notifStatus()}</div>
-      </div>
-      <button class="btn" type="button" data-notif>Enable</button>
-    </div>
-
-    <footer class="footer rise" style="animation-delay:${340 + Object.keys(CHECKLIST).length * 70}ms">
-      ${KD_MARK}
-      <div class="label">Consistency over intensity</div>
-    </footer>
-  `;
-
-  el.days = document.querySelector('[data-days]');
-  el.prog = document.querySelector('[data-prog]');
-  el.glow = document.querySelector('[data-glow]');
-  el.status = document.querySelector('[data-status]');
-  el.streak = document.querySelector('[data-streak]');
-  el.consistency = document.querySelector('[data-consistency]');
-  el.best = document.querySelector('[data-best]');
-  el.tally = document.querySelector('[data-tally]');
-  el.ledgerNote = document.querySelector('[data-ledger-note]');
-  el.notifStatus = document.querySelector('[data-notif-status]');
-  el.notifBtn = document.querySelector('[data-notif]');
-  el.toggles = Array.from(document.querySelectorAll('.item, .chip'));
-  el.cards = Array.from(document.querySelectorAll('.card'));
-
-  buildTally();
-  wire();
-  syncNotif();
-}
-
-function buildTally(){
-  const days = history();
-  const goal = Math.ceil(TOTAL * GOOD_DAY);
-  const todayKey = dayKey();
-
-  el.tally.innerHTML = days.map((d, i) => {
-    const ratio = Math.min(d.checked / TOTAL, 1);
-    const cls = ['tally'];
-    if(d.key === todayKey) cls.push('today');
-    if(d.checked >= goal) cls.push('full');
-    else if(d.checked > 0) cls.push('partial');
-    const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-    return `<div class="${cls.join(' ')}" data-day="${d.key}"
-                 style="height:${38 + ratio * 62}%;${REDUCED_MOTION ? '' : `animation:kd-tally-in 0.5s var(--kd-ease) ${320 + i * 14}ms both`}"
-                 title="${label} — ${d.checked}/${TOTAL}"></div>`;
-  }).join('');
-
-  el.ledgerNote.textContent = `${days[0].date.toLocaleDateString('en-GB',{ day:'numeric', month:'short' })} — today`;
-}
-
-/* ---------- patch the view to match state ---------- */
-function sync(){
-  const done = doneCount(today);
-  const ratio = TOTAL ? done / TOTAL : 0;
-  const complete = done === TOTAL;
-
-  const offset = CIRC * (1 - ratio);
-  el.prog.style.strokeDashoffset = offset;
-  el.glow.style.strokeDashoffset = offset;
-
-  el.status.textContent = complete ? 'Day complete' : `Today ${done}/${TOTAL}`;
-  document.body.classList.toggle('is-complete', complete);
-
-  // checklist sections
-  Object.entries(CHECKLIST).forEach(([key, sec]) => {
-    const card = document.querySelector(`[data-section="${key}"]`);
-    const n = sec.items.filter(it => today[it.id]).length;
-    card.querySelector('[data-count]').textContent = `${n}/${sec.items.length}`;
-    card.querySelector('[data-meter]').style.width = `${(n / sec.items.length) * 100}%`;
-  });
-
-  // training
-  const trained = TRAINING.filter(t => today[t.id]).length;
-  const trainingCard = el.cards[el.cards.length - 1];
-  trainingCard.querySelector('[data-count]').textContent = `${trained}/${TRAINING.length}`;
-  trainingCard.querySelector('[data-meter]').style.width = `${(trained / TRAINING.length) * 100}%`;
-
-  // rows
-  el.toggles.forEach(node => {
-    const on = !!today[node.dataset.id];
-    node.classList.toggle(node.classList.contains('chip') ? 'is-active' : 'done', on);
-    node.setAttribute('aria-checked', String(on));
-  });
-
-  // today's bar in the ledger
-  const cell = el.tally.querySelector(`[data-day="${dayKey()}"]`);
-  if(cell){
-    cell.style.height = `${38 + Math.min(ratio, 1) * 62}%`;
-    cell.classList.toggle('full', done >= Math.ceil(TOTAL * GOOD_DAY));
-    cell.classList.toggle('partial', done > 0 && done < Math.ceil(TOTAL * GOOD_DAY));
-    cell.title = `Today — ${done}/${TOTAL}`;
-  }
-
-  // stats
-  const days = history();
-  el.streak.textContent = streakOf(days);
-  el.consistency.innerHTML = `${consistencyOf(days)}<small>%</small>`;
-  el.best.textContent = bestStreakOf(days);
-}
-
-function syncNotif(){
-  el.notifStatus.textContent = notifStatus();
-  const granted = NOTIF_SUPPORTED && Notification.permission === 'granted';
-  el.notifBtn.textContent = granted ? 'Test' : 'Enable';
-  el.notifBtn.classList.toggle('is-on', granted);
-  el.notifBtn.disabled = !NOTIF_SUPPORTED ||
-    (NOTIF_SUPPORTED && Notification.permission === 'denied');
-}
-
-/* ---------- interaction ---------- */
-function toggle(node){
-  const id = node.dataset.id;
-  const wasOn = !!today[id];
-  today[id] = !wasOn;
-  setEntry(dayKey(), today);
-
-  if(!wasOn){
-    node.classList.add('just-done');
-    setTimeout(() => node.classList.remove('just-done'), 400);
-  }
-
-  const wasComplete = document.body.classList.contains('is-complete');
-  sync();
-  const nowComplete = document.body.classList.contains('is-complete');
-
-  if(nowComplete && !wasComplete) tap([14, 60, 14, 60, 26]);
-  else tap(wasOn ? 8 : 14);
-}
-
-function wire(){
-  el.toggles.forEach(node => {
-    node.addEventListener('click', () => toggle(node));
-    if(!node.classList.contains('chip')){
-      node.addEventListener('keydown', e => {
-        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(node); }
-      });
-    }
-  });
-  el.notifBtn.addEventListener('click', onNotifClick);
-}
-
-/* ---------- hero count-up ---------- */
-function countUp(node, target){
-  if(REDUCED_MOTION){ node.textContent = target; return; }
-  const duration = 1100;
-  const start = performance.now();
-  function frame(now){
-    const t = Math.min((now - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - t, 4); // settles, never overshoots
-    node.textContent = Math.round(target * eased);
-    if(t < 1) requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
-
-/* ---------- day rollover ---------- */
-// Reopening the app after midnight should show a fresh day, not
-// yesterday's ticks.
-let mountedOn = dayKey();
-function checkRollover(){
-  if(dayKey() === mountedOn) return;
-  mountedOn = dayKey();
-  today = getEntry(mountedOn);
-  buildTally();
-  sync();
-  document.querySelector('[data-today-date]').textContent =
-    new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-  countUp(el.days, daysUntil(BIRTHDAY));
-}
-document.addEventListener('visibilitychange', () => {
-  if(!document.hidden) checkRollover();
-});
-
-/* ---------- boot ---------- */
-build();
-sync();
-countUp(el.days, daysUntil(BIRTHDAY));
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.error('SW failed', err));
-  });
-}
-</script>
+<script src="js/app.js"></script>
 </body>
 </html>
