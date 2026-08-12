@@ -18,8 +18,13 @@ A daily discipline tracker counting down to your 40th (7 May 2027), built in the
 ## How it scores you
 
 **Daily habits** drive everything — the ring, the streak, the ledger. A day counts
-as logged at 70% of them. Four sections ship by default: Body, Mind, Soul and
-Inflammation.
+as logged at 70% of them — the target, shown as a marker on the ring. Five
+sections ship by default: Body, Mind, Soul, Inflammation and General health.
+
+Hitting the target closes the ring and reads **Day complete**; clearing every box
+reads **Perfect day**. Completion is the target rather than 100% because with 22
+habits a demand for all of them would mean the ring effectively never closes, and
+the reward for a genuinely good day would never fire.
 
 Each day records the habit count it was scored against, so adding habits later
 raises the bar from that point on rather than retroactively failing days you
@@ -52,7 +57,9 @@ and the rise-and-unblur primitive, so it settles rather than bounces.
   same ring four times: Body is a segmented sweep with a needle (output), Mind
   is concentric rings lighting inward (dialling in), Soul is wedges closing a
   circle (a day going round), Inflammation is a needle running hot to cool.
-  Training reuses the sweep against the weekly target. All SVG — three.js would
+  General health is a ten-rung level meter filling bottom-up, because the radial
+  forms get cramped past about six segments. Training reuses the sweep against
+  the weekly target. All SVG — three.js would
   have cost more than the whole app for a checklist, and this stays sharp at any
   size and animates on the GPU.
 - **Blue stays scarce** — the accent word, the ring, the checks. The one

@@ -35,6 +35,24 @@ const INFLAMMATION_ITEMS = [
   { id: 'overnightfast', label: '12 hours between dinner and breakfast' }
 ];
 
+/* Ten general levers, chosen to not repeat what the other sections
+   already ask for: this is duration where Soul tracks regularity,
+   volume where Body tracks a single glass, and it picks up the things
+   nothing else covers — light, sitting, caffeine timing, teeth, and
+   actually talking to someone. */
+const HEALTH_ITEMS = [
+  { id: 'sleep7', label: "Seven hours' sleep" },
+  { id: 'steps', label: '8,000 steps' },
+  { id: 'daylight', label: 'Daylight within an hour of waking' },
+  { id: 'water2l', label: 'Two litres of water' },
+  { id: 'fibre', label: '30g of fibre' },
+  { id: 'caffeine', label: 'Caffeine done by 2pm' },
+  { id: 'standup', label: 'Up and moving every hour' },
+  { id: 'lastmeal', label: 'Nothing to eat 3 hours before bed' },
+  { id: 'teeth', label: 'Floss, and brush twice' },
+  { id: 'talk', label: 'Ten minutes of real conversation' }
+];
+
 const DEFAULT_CONFIG = {
   birthday: '2027-05-07',
   // Daily habits — these drive the ring, the streak and the ledger.
@@ -52,7 +70,8 @@ const DEFAULT_CONFIG = {
       { id: 'sleep', label: 'Fixed sleep / wake time' },
       { id: 'lookforward', label: 'One thing to look forward to' }
     ]},
-    { id: 'inflammation', title: 'Inflammation', items: INFLAMMATION_ITEMS }
+    { id: 'inflammation', title: 'Inflammation', items: INFLAMMATION_ITEMS },
+    { id: 'health', title: 'General health', items: HEALTH_ITEMS }
   ],
   // Training is a weekly target, not a daily box. A rest day is not a
   // failure, so it must not be able to break a streak.
@@ -196,9 +215,31 @@ function dayKeysInStorage(){
   return keys; // collected first — the loops below write as they go
 }
 
+// Adding a section to DEFAULT_CONFIG never reaches anyone who has
+// already saved settings — their stored config wins — so each new
+// section needs an explicit step here.
+function addSection(stored, id, title, items){
+  if(!stored || !Array.isArray(stored.daily)) return false;
+  if(stored.daily.some(s => s.id === id)) return false;
+  stored.daily.push({ id, title, items: structuredClone(items) });
+  return true;
+}
+
+// Stamp days that predate _total with what they were really scored
+// against, before the new section moves the number.
+function stampTotals(keys, priorTotal){
+  if(!(priorTotal > 0)) return;
+  keys.forEach(k => {
+    const entry = read(k, null);
+    if(!entry || entry._total) return;
+    entry._total = priorTotal;
+    write(k, entry);
+  });
+}
+
 function migrate(){
   const at = read('kd-fit:migrated', 0);
-  if(at >= 4) return;
+  if(at >= 5) return;
   const keys = dayKeysInStorage();
 
   if(at < 3){
@@ -215,37 +256,28 @@ function migrate(){
   }
 
   if(at < 4){
-    // Stamp every day already logged with the habit count it was
-    // actually scored against, BEFORE the new section lands. Without
-    // this they fall back to the new count and a real streak evaporates.
     const stored = read('kd-fit:config', null);
     const priorDaily = (stored && Array.isArray(stored.daily))
       ? stored.daily
-      : DEFAULT_CONFIG.daily.filter(s => s.id !== 'inflammation');
-    const priorTotal = priorDaily.reduce((n, s) => n + (s.items ? s.items.length : 0), 0);
-
-    if(priorTotal > 0){
-      keys.forEach(k => {
-        const entry = read(k, null);
-        if(!entry || entry._total) return;
-        entry._total = priorTotal;
-        write(k, entry);
-      });
-    }
-
-    // A new default section never reaches anyone who has already saved
-    // settings, since their stored config wins. Add it explicitly.
-    if(stored && Array.isArray(stored.daily) && !stored.daily.some(s => s.id === 'inflammation')){
-      stored.daily.push({
-        id: 'inflammation',
-        title: 'Inflammation',
-        items: structuredClone(INFLAMMATION_ITEMS)
-      });
+      : DEFAULT_CONFIG.daily.filter(s => s.id !== 'inflammation' && s.id !== 'health');
+    stampTotals(keys, priorDaily.reduce((n, s) => n + (s.items ? s.items.length : 0), 0));
+    if(addSection(stored, 'inflammation', 'Inflammation', INFLAMMATION_ITEMS)){
       write('kd-fit:config', stored);
     }
   }
 
-  write('kd-fit:migrated', 4);
+  if(at < 5){
+    const stored = read('kd-fit:config', null);
+    const priorDaily = (stored && Array.isArray(stored.daily))
+      ? stored.daily
+      : DEFAULT_CONFIG.daily.filter(s => s.id !== 'health');
+    stampTotals(keys, priorDaily.reduce((n, s) => n + (s.items ? s.items.length : 0), 0));
+    if(addSection(stored, 'health', 'General health', HEALTH_ITEMS)){
+      write('kd-fit:config', stored);
+    }
+  }
+
+  write('kd-fit:migrated', 5);
 }
 
 /* ---------- computed history ---------- */
@@ -329,7 +361,9 @@ function checkMark(){
    accent, used here because the meaning needs a second hue — it is the
    only non-blue in the app.
    ============================================================ */
-const GAUGE_BY_SECTION = { body: 'arc', mind: 'rings', soul: 'clock', inflammation: 'heat' };
+const GAUGE_BY_SECTION = {
+  body: 'arc', mind: 'rings', soul: 'clock', inflammation: 'heat', health: 'ladder'
+};
 function gaugeType(id){ return GAUGE_BY_SECTION[id] || 'arc'; }
 
 const G = 68, GC = G / 2;
@@ -366,6 +400,17 @@ function buildGauge(type, n, uid){
   if(type === 'clock'){
     return `<svg class="g g-clock" viewBox="0 0 ${G} ${G}" aria-hidden="true">
       ${seg(0, 360, 5, 22)}</svg>`;
+  }
+
+  // A level meter — ten rungs filling bottom-up. The radial forms get
+  // cramped past about six segments; this stays legible at ten.
+  if(type === 'ladder'){
+    const span = 50, half = 21;
+    const rungs = Array.from({ length: n }, (_, i) => {
+      const y = n > 1 ? GC + span / 2 - (span / (n - 1)) * i : GC;
+      return `<line class="seg" data-i="${i}" x1="${GC - half}" y1="${y.toFixed(2)}" x2="${GC + half}" y2="${y.toFixed(2)}"/>`;
+    }).join('');
+    return `<svg class="g g-ladder" viewBox="0 0 ${G} ${G}" aria-hidden="true">${rungs}</svg>`;
   }
 
   if(type === 'heat'){
@@ -503,6 +548,7 @@ function build(){
                   stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}"/>
           <circle class="dial-prog" cx="140" cy="140" r="${R}" data-prog
                   stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}"/>
+          <line class="dial-target" data-target/>
         </svg>
         <div class="dial-face" data-face>
           <div class="dial-num num" data-days>${REDUCED_MOTION ? daysUntilBirthday() : 0}</div>
@@ -583,6 +629,7 @@ function build(){
   el.prog = document.querySelector('[data-prog]');
   el.glow = document.querySelector('[data-glow]');
   el.status = document.querySelector('[data-status]');
+  el.target = document.querySelector('[data-target]');
   el.streak = document.querySelector('[data-streak]');
   el.rate = document.querySelector('[data-rate]');
   el.best = document.querySelector('[data-best]');
@@ -674,15 +721,35 @@ function sync(){
   const total = dailyTotal();
   const done = dailyDone(today);
   const ratio = total ? done / total : 0;
-  const complete = total > 0 && done === total;
+  /* The day is "done" at the target, not at every last box. With 22
+     habits, requiring all of them would mean the ring never closes and
+     the reward for a genuinely good day never fires — the same 70% that
+     has always defined a logged day now defines a closed ring. Clearing
+     the whole list is its own, rarer thing. */
+  const mark = goodDayMark();
+  const complete = total > 0 && done >= mark;
+  const perfect = total > 0 && done === total;
 
   const offset = CIRC * (1 - ratio);
   el.prog.style.strokeDashoffset = offset;
   el.glow.style.strokeDashoffset = offset;
 
-  el.status.textContent = complete ? 'Day complete' : `Today ${done}/${total}`;
+  el.status.textContent = perfect ? 'Perfect day'
+    : complete ? 'Day complete'
+    : `Today ${done}/${total} — target ${mark}`;
   document.body.classList.toggle('is-complete', complete);
+  document.body.classList.toggle('is-perfect', perfect);
   syncSeal(complete);
+
+  // Where the day starts counting, marked on the ring itself.
+  if(el.target && total > 0){
+    const deg = 360 * (mark / total);
+    const rad = deg * Math.PI / 180;
+    el.target.setAttribute('x1', (140 + Math.cos(rad) * (R - 9)).toFixed(2));
+    el.target.setAttribute('y1', (140 + Math.sin(rad) * (R - 9)).toFixed(2));
+    el.target.setAttribute('x2', (140 + Math.cos(rad) * (R + 9)).toFixed(2));
+    el.target.setAttribute('y2', (140 + Math.sin(rad) * (R + 9)).toFixed(2));
+  }
 
   config.daily.forEach(sec => {
     const card = document.querySelector(`[data-section="${sec.id}"]`);

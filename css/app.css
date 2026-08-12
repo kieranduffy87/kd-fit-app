@@ -172,6 +172,14 @@ body.is-complete .ambient{opacity:1.35;}
   stroke-linecap:round;
   transition:stroke-dashoffset 0.75s var(--kd-ease);
 }
+.dial-target{
+  stroke:var(--kd-muted);
+  stroke-width:2;
+  stroke-linecap:round;
+  opacity:0.75;
+  transition:stroke var(--kd-t-fast) var(--kd-ease);
+}
+body.is-complete .dial-target{stroke:var(--kd-blue);}
 .dial-glow{
   fill:none;
   stroke:var(--kd-blue);
@@ -413,6 +421,7 @@ body.is-complete .dial-glow{opacity:0.85;}
 }
 .g-heat .tick.on{stroke:var(--kd-text);}
 
+.g-ladder .seg{stroke-width:3;}
 .g-rings .seg{stroke-width:3.4;}
 .g-rings .core{fill:rgba(236,238,242,0.12);transition:fill var(--kd-t-fast) var(--kd-ease);}
 .g-clock .seg{stroke-width:11;stroke-linecap:butt;}
