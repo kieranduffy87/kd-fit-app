@@ -113,6 +113,44 @@ Two things worth knowing: push on iPhone only works for a home-screen app, not a
 Safari tab. And GitHub's scheduler is best-effort — it can run several minutes
 late, which is fine for a nudge and no good as an alarm.
 
+## Native app (iOS)
+
+The same codebase runs three ways — browser tab, installed PWA, and a native
+shell via Capacitor. `js/native.js` is the only file that knows the difference.
+
+Two things are genuinely better natively, and both matter here:
+
+- **Haptics actually fire.** `navigator.vibrate` does not exist on iOS Safari, so
+  every haptic in the PWA is a silent no-op on iPhone. The native build talks to
+  the Taptic Engine.
+- **Reminders need no server.** A local notification scheduled on the device
+  fires on time, offline, with no VAPID keys, no Actions secrets and no
+  subscription to keep alive. Settings shows a time picker instead of the web
+  push setup. The GitHub Actions path stays for the PWA.
+
+### Building it
+
+Needs a Mac with Xcode, and an Apple Developer account ($99/yr) to put it on a
+phone that isn't plugged in.
+
+```
+npm install
+npm run ios          # builds www/, syncs, opens Xcode
+```
+
+Then in Xcode: select your team under **Signing & Capabilities**, pick your
+device, and hit run. First launch will ask for notification permission.
+
+`ios/` is committed, so the Xcode project is ready to open. CocoaPods runs on
+first `cap sync` on your machine — the pods themselves aren't committed.
+
+The app icon is generated from the KD chevron at 1024×1024 with no alpha
+channel, which is what App Store submission requires. The native launch screen
+is a flat Scrim Ink field that hands over to the in-app splash.
+
+Android is configured but not added — run `npx cap add android` when you want
+it. Nothing in the web layer is iOS-specific.
+
 ## Deploying
 
 Nothing to build. Push to `main` and the workflow publishes the repo root to

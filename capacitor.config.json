@@ -1,0 +1,22 @@
+{
+  "appId": "ie.kieranduffy.kdfit",
+  "appName": "40",
+  "webDir": "www",
+  "backgroundColor": "#08090bff",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#08090bff",
+    "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "backgroundColor": "#08090bff",
+      "showSpinner": false
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon",
+      "iconColor": "#0339F8"
+    }
+  }
+}

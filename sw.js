@@ -1,4 +1,4 @@
-const CACHE = 'kd-fit-v4';
+const CACHE = 'kd-fit-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './css/app.css',
   './js/app.js',
   './js/mark3d.js',
+  './js/native.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/favicon.svg',

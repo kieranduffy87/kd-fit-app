@@ -473,7 +473,10 @@ function syncGauge(node, type, done, total){
   svg.classList.toggle('full', total > 0 && done === total);
 }
 
-function tap(pattern){ if(navigator.vibrate) navigator.vibrate(pattern); }
+// Routed through KDNative: navigator.vibrate does nothing on iOS Safari,
+// so in the PWA these are silent on iPhone and only fire in the native shell.
+function tap(kind){ if(global_native()) global_native().haptic(kind); }
+function global_native(){ return window.KDNative; }
 
 function toast(message){
   let node = document.querySelector('.toast');
@@ -838,7 +841,7 @@ function wireSeal(){
     if(!document.body.classList.contains('is-complete')) return;
     sealOn = !sealOn;
     syncSeal(true);
-    tap(10);
+    tap('light');
   });
 }
 
@@ -850,6 +853,11 @@ document.addEventListener('visibilitychange', () => {
 
 function syncNotifStatus(){
   if(!el.notifStatus) return;
+  if(window.KDNative && window.KDNative.isNative){
+    const r = read('kd-fit:reminder', null);
+    el.notifStatus.textContent = r ? `On — every day at ${r.at}` : 'Off — pick a time';
+    return;
+  }
   if(!NOTIF_SUPPORTED){ el.notifStatus.textContent = 'Not supported in this browser'; return; }
   if(Notification.permission === 'denied'){ el.notifStatus.textContent = 'Blocked — enable in Settings'; return; }
   if(Notification.permission === 'granted'){
@@ -879,8 +887,8 @@ function toggle(node){
   sync();
   const nowComplete = document.body.classList.contains('is-complete');
 
-  if(nowComplete && !wasComplete) tap([14, 60, 14, 60, 26]);
-  else tap(wasOn ? 8 : 14);
+  if(nowComplete && !wasComplete) tap('success');
+  else tap(wasOn ? 'light' : 'tick');
 }
 
 function wire(){
@@ -1036,6 +1044,24 @@ function sheetMarkup(){
 }
 
 function pushMarkup(sub){
+  // Native shell: the OS owns the schedule. No keys, no secrets, no
+  // subscription to keep alive — and it fires whether or not the app
+  // has been opened.
+  if(window.KDNative && window.KDNative.isNative){
+    const time = read('kd-fit:reminder', null);
+    return `
+      <div class="field">
+        <input class="input" type="time" data-remind-time value="${escapeHtml(time ? time.at : '07:30')}">
+        <button class="btn" type="button" data-remind-set>${time ? 'Update' : 'Set'}</button>
+      </div>
+      ${time ? `<div class="row-btns"><button class="btn danger" type="button" data-remind-off>Turn off</button></div>` : ''}
+      <div class="group-note">
+        ${time
+          ? `Scheduled for ${escapeHtml(time.at)} every day, by the phone itself.`
+          : 'Pick a time and the phone will nudge you every day — offline, no server.'}
+      </div>`;
+  }
+
   if(!PUSH_SUPPORTED){
     return `<div class="group-note">
       This browser can't do push notifications. On iPhone, add the app to your
@@ -1106,6 +1132,21 @@ function wireSheet(sheet){
   q('[data-reset]').addEventListener('click', () => {
     config = structuredClone(DEFAULT_CONFIG);
     saveConfig(); reopen(); toast('Settings reset');
+  });
+
+  const setTime = q('[data-remind-set]');
+  if(setTime) setTime.addEventListener('click', async () => {
+    const at = q('[data-remind-time]').value || '07:30';
+    const [h, m] = at.split(':').map(Number);
+    const ok = await window.KDNative.scheduleDaily(h, m);
+    if(ok){ write('kd-fit:reminder', { at }); reopen(); toast(`Reminder set for ${at}`); }
+    else toast('Notifications not allowed');
+  });
+  const offBtn = q('[data-remind-off]');
+  if(offBtn) offBtn.addEventListener('click', async () => {
+    await window.KDNative.cancelDaily();
+    try{ localStorage.removeItem('kd-fit:reminder'); }catch(e){ /* ignore */ }
+    reopen(); toast('Reminder off');
   });
 
   const sub = q('[data-subscribe]');
@@ -1273,8 +1314,9 @@ if(document.fonts && document.fonts.ready){
 // Never strand the user behind the splash if a font request hangs.
 setTimeout(dismissSplash, 3500);
 
-if('serviceWorker' in navigator){
+if('serviceWorker' in navigator && !(window.KDNative && window.KDNative.isNative)){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(err => console.error('SW failed', err));
   });
 }
+if(window.KDNative && window.KDNative.isNative) window.KDNative.ready();
