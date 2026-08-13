@@ -1190,11 +1190,56 @@ function toggle(node){
   }
 
   const wasComplete = document.body.classList.contains('is-complete');
+  const wasPerfect = document.body.classList.contains('is-perfect');
   sync();
   const nowComplete = document.body.classList.contains('is-complete');
+  const nowPerfect = document.body.classList.contains('is-perfect');
 
-  if(nowComplete && !wasComplete) tap('success');
-  else tap(wasOn ? 'light' : 'tick');
+  if(nowComplete && !wasComplete){
+    tap('success');
+    celebrate(nowPerfect);
+  } else if(nowPerfect && !wasPerfect){
+    // Clearing the whole list after already hitting the target is its
+    // own, rarer moment and deserves the second showing.
+    tap('success');
+    celebrate(true);
+  } else {
+    tap(wasOn ? 'light' : 'tick');
+  }
+}
+
+/* ---------- the completion overlay ----------
+   Fires only on the transition into a closed day, never on load and
+   never on a re-render — a reward that replays itself stops being one. */
+let celTimer = null;
+
+function celebrate(perfect){
+  const host = document.getElementById('celebrate');
+  if(!host) return;
+
+  const days = recentHistory();
+  const streak = streakOf(days) + 1;   // today counts once it's closed
+  const done = dailyDone(today);
+  const total = dailyTotal();
+
+  host.querySelector('[data-cel-title]').textContent = perfect ? 'Perfect day' : 'Day complete';
+  host.querySelector('[data-cel-sub]').textContent =
+    `${done} of ${total}` + (streak > 1 ? ` · ${streak} day streak` : '');
+
+  clearTimeout(celTimer);
+  host.classList.remove('out');
+  host.classList.toggle('perfect', !!perfect);
+  host.hidden = false;
+  // Restart the whole sequence even if it was already on screen.
+  void host.offsetWidth;
+
+  const close = () => {
+    clearTimeout(celTimer);
+    host.classList.add('out');
+    setTimeout(() => { host.hidden = true; host.classList.remove('out'); }, 500);
+  };
+  host.onclick = close;
+  celTimer = setTimeout(close, REDUCED_MOTION ? 1400 : 2600);
 }
 
 function wire(){

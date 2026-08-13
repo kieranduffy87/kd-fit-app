@@ -646,7 +646,54 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 /* ============================================================
    Section instruments — four mechanisms, one family.
    ============================================================ */
-.gauge{width:88px;height:88px;flex:none;}
+/* ---------- gauge plates ----------
+   Each instrument sits on its own disc of glass rather than floating as
+   a bare stroke. Same recipe as the cards, but circular and with a
+   directional sheen across the top-left, which is what reads as a
+   curved surface rather than a flat hole cut in the card. */
+.gauge{
+  width:92px;height:92px;flex:none;
+  position:relative;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:
+    linear-gradient(145deg, var(--glass-edge) 0%, transparent 42%),
+    var(--glass-bg);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.7);
+  backdrop-filter:blur(var(--glass-blur)) saturate(1.7);
+  border:1px solid var(--glass-hair);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 -2px 6px var(--glass-under),
+    0 6px 18px rgb(0 0 0 / 0.16);
+}
+/* A specular highlight riding the top-left rim — the single cue that
+   makes a disc look domed. */
+.gauge::before{
+  content:'';
+  position:absolute;
+  inset:3px;
+  border-radius:50%;
+  background:radial-gradient(ellipse 70% 55% at 28% 16%,
+    var(--glass-edge), transparent 62%);
+  opacity:0.55;
+  pointer-events:none;
+}
+/* …and a faint pool of light caught at the bottom of the bowl. */
+.gauge::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:radial-gradient(ellipse 60% 40% at 50% 104%,
+    rgb(var(--kd-accent-rgb) / 0.20), transparent 68%);
+  opacity:0;
+  transition:opacity var(--kd-t-move) var(--kd-ease);
+  pointer-events:none;
+}
+.card:has(.g.full) .gauge::after{opacity:1;}
+.gauge .g{position:relative;z-index:1;width:78%;height:78%;}
 .g{width:100%;height:100%;display:block;overflow:visible;}
 
 /* The unlit track has to read on its own — an instrument you can only
@@ -660,6 +707,7 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 }
 .g .seg.on{
   stroke:var(--kd-accent);
+  stroke-width:6;
   filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / var(--kd-glow)));
 }
 /* Animates opacity and glow rather than stroke-width, so the variants
@@ -1369,4 +1417,128 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
 .item,.train,.day,.swatch,.ob-pill,.ob-choice,.seg button,.icon-btn,
 .remove,.add,.btn,.tally,.ycell{
   touch-action:manipulation;
+}
+
+/* ============================================================
+   The completion overlay
+
+   A tick on the dial was the wrong reward for the wrong place: the
+   dial lives at the top of the page and you are almost always at the
+   bottom, ticking the last habit off, when the day actually closes.
+   The moment has to travel to you.
+
+   So the whole screen frosts, a pane of glass rises through it, a ring
+   sweeps and a check draws — then it clears itself after a couple of
+   seconds. Tap anywhere to dismiss early.
+   ============================================================ */
+.celebrate{
+  position:fixed;
+  inset:0;
+  z-index:80;
+  display:grid;
+  place-items:center;
+  background:rgb(var(--kd-accent-rgb) / 0.10);
+  -webkit-backdrop-filter:blur(26px) saturate(1.5);
+  backdrop-filter:blur(26px) saturate(1.5);
+  animation:cel-in 0.42s var(--kd-ease) both;
+}
+.celebrate[hidden]{display:none;}
+.celebrate.out{animation:cel-out 0.5s var(--kd-ease) both;}
+@keyframes cel-in{from{opacity:0;}}
+@keyframes cel-out{to{opacity:0;}}
+
+/* The pane itself — the same glass as everything else, one size up. */
+.celebrate-pane{
+  display:grid;
+  justify-items:center;
+  gap:0.2rem;
+  padding:2.6rem 2.9rem 2.3rem;
+  border-radius:32px;
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.8);
+  backdrop-filter:blur(var(--glass-blur)) saturate(1.8);
+  border:1px solid var(--glass-hair);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 -1px 0 var(--glass-under),
+    0 30px 70px rgb(0 0 0 / 0.34);
+  animation:cel-pane 0.66s var(--kd-ease) both;
+}
+@keyframes cel-pane{
+  from{ opacity:0; transform:translateY(18px) scale(0.92); filter:blur(8px); }
+  to{ opacity:1; transform:none; filter:blur(0); }
+}
+
+.celebrate-mark{width:118px;height:118px;display:block;overflow:visible;}
+/* The ring sweeps closed first, then the check draws inside it —
+   circumference of r=46 is 289, used directly as the dash length. */
+.cel-ring{
+  fill:none;
+  stroke:var(--kd-accent);
+  stroke-width:4;
+  stroke-linecap:round;
+  opacity:0.9;
+  transform:rotate(-90deg);
+  transform-origin:50% 50%;
+  stroke-dasharray:289;
+  stroke-dashoffset:289;
+  animation:cel-ring 0.85s var(--kd-ease) 0.12s forwards;
+  filter:drop-shadow(0 0 12px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 0.9)));
+}
+@keyframes cel-ring{ to{ stroke-dashoffset:0; } }
+
+.cel-check{
+  fill:none;
+  stroke:var(--kd-accent);
+  stroke-width:8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:88;
+  stroke-dashoffset:88;
+  animation:cel-check 0.5s var(--kd-ease) 0.62s forwards;
+  filter:drop-shadow(0 0 10px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 0.8)));
+}
+@keyframes cel-check{ to{ stroke-dashoffset:0; } }
+
+.celebrate-title{
+  font-size:1.5rem;
+  font-weight:600;
+  letter-spacing:var(--kd-track-display);
+  color:var(--kd-text);
+  margin-top:0.9rem;
+  animation:cel-rise 0.6s var(--kd-ease) 0.72s both;
+}
+.celebrate-sub{
+  font-size:var(--kd-fs-tag);
+  font-weight:500;
+  letter-spacing:var(--kd-track-label);
+  text-transform:uppercase;
+  color:var(--kd-muted);
+  animation:cel-rise 0.6s var(--kd-ease) 0.84s both;
+}
+@keyframes cel-rise{
+  from{ opacity:0; transform:translateY(9px); filter:blur(5px); }
+  to{ opacity:1; transform:none; filter:blur(0); }
+}
+
+/* A perfect day gets a second, wider halo behind the pane. */
+.celebrate.perfect .celebrate-pane::after{
+  content:'';
+  position:absolute;
+  inset:-40%;
+  border-radius:50%;
+  background:radial-gradient(circle, rgb(var(--kd-accent-rgb) / 0.22), transparent 62%);
+  z-index:-1;
+  animation:cel-halo 1.6s var(--kd-ease) 0.3s both;
+}
+.celebrate-pane{position:relative;}
+@keyframes cel-halo{
+  from{ opacity:0; transform:scale(0.7); }
+  60%{ opacity:1; }
+  to{ opacity:0.75; transform:scale(1); }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .celebrate-pane,.celebrate-title,.celebrate-sub{animation:none;opacity:1;transform:none;filter:none;}
+  .cel-ring,.cel-check{animation:none;stroke-dashoffset:0;}
 }

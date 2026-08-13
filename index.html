@@ -185,6 +185,21 @@
 <div class="sheet" id="sheet" hidden></div>
 <div class="onboard" id="onboard" hidden></div>
 
+<!-- Shown for a couple of seconds the moment the day closes. It exists
+     because the dial is at the top of the page and you are usually at
+     the bottom when you tick the last thing — the reward has to come to
+     you rather than wait up there to be scrolled to. -->
+<div class="celebrate" id="celebrate" hidden aria-hidden="true">
+  <div class="celebrate-pane">
+    <svg class="celebrate-mark" viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="cel-ring" cx="60" cy="60" r="46"/>
+      <path class="cel-check" d="M38 61 L54 77 L84 43"/>
+    </svg>
+    <div class="celebrate-title" data-cel-title>Day complete</div>
+    <div class="celebrate-sub" data-cel-sub></div>
+  </div>
+</div>
+
 <script src="js/native.js"></script>
 <script src="js/app.js"></script>
 </body>
