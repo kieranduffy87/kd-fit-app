@@ -1,7 +1,7 @@
 /* Bump this on every release that touches a cached asset. CSS and JS
    are served cache-first, so without a bump a returning user keeps the
    old build until the cache is cleared by hand. */
-const CACHE = 'kd-fit-v6';
+const CACHE = 'kd-fit-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -15,7 +15,9 @@ const ASSETS = [
   './icons/favicon.svg',
   './fonts/instrument-sans-0.woff2',
   './fonts/instrument-sans-1.woff2',
-  './img/splash.webp'
+  './img/splash.webp',
+  './img/ob-1.webp',
+  './img/ob-2.webp'
 ];
 
 self.addEventListener('install', (e) => {

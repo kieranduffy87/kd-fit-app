@@ -1841,6 +1841,9 @@ function renderOnboarding(){
   const last = s.step === 3;
 
   host.hidden = false;
+  // First light carries the opening pair, the calmer water the closing
+  // pair — so moving through setup reads as a day passing.
+  host.setAttribute('data-art', s.step < 2 ? '1' : '2');
   document.body.style.overflow = 'hidden';
   host.innerHTML = `
     <div class="ob-inner">

@@ -699,16 +699,63 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
   animation:sheet-in 0.5s var(--kd-ease) both;
 }
 .onboard[hidden]{display:none;}
+
+/* ---------- the art ----------
+   Two fixed layers, one per image, cross-faded by [data-art] as the
+   steps advance: first light for the opening pair, the calmer water
+   for the closing pair. Both are pale, so the scrim has to invert per
+   theme — dark text needs the image lifted, light text needs it sunk,
+   and without that one of the two themes loses its type entirely. */
+.onboard::before,
+.onboard::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  opacity:0;
+  transition:opacity 1.1s var(--kd-ease);
+  pointer-events:none;
+}
+/* The scrim is a gradient, not a flat veil, and it rides on the same
+   layer as the photo so the two fade together. Flat coverage heavy
+   enough to carry the heading turned the whole image to mud; weighting
+   it to the top — where the type is — leaves the lower two thirds of
+   the picture actually visible. */
+.onboard::before{background-image:var(--ob-scrim),url('../img/ob-1.webp');}
+.onboard::after{background-image:var(--ob-scrim),url('../img/ob-2.webp');}
+.onboard[data-art="1"]::before{opacity:1;}
+.onboard[data-art="2"]::after{opacity:1;}
+
+:root{
+  --ob-scrim:linear-gradient(180deg,
+    rgb(8 9 11 / 0.88) 0%,
+    rgb(8 9 11 / 0.66) 34%,
+    rgb(8 9 11 / 0.34) 62%,
+    rgb(8 9 11 / 0.30) 100%);
+}
+:root[data-theme="light"]{
+  --ob-scrim:linear-gradient(180deg,
+    rgb(252 252 253 / 0.80) 0%,
+    rgb(252 252 253 / 0.52) 34%,
+    rgb(252 252 253 / 0.20) 62%,
+    rgb(252 252 253 / 0.14) 100%);
+}
 .ob-inner{
+  position:relative;   /* above the two art layers */
+  z-index:1;
   max-width:520px;
   margin:0 auto;
   min-height:100%;
   display:flex;
   flex-direction:column;
+  /* No bottom padding — the sticky actions bar owns the bottom edge and
+     carries the safe-area inset itself. Padding here would leave a strip
+     of bare artwork under the bar. */
   padding:
     calc(2rem + env(safe-area-inset-top))
     calc(var(--kd-pad) + env(safe-area-inset-right))
-    calc(2rem + env(safe-area-inset-bottom))
+    0
     calc(var(--kd-pad) + env(safe-area-inset-left));
 }
 .ob-progress{display:flex;gap:0.35rem;margin-bottom:2.5rem;}
@@ -743,13 +790,17 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 .ob-group .input{margin-bottom:0.6rem;}
 
 .ob-choices{display:grid;gap:0.6rem;}
+/* Frosted rather than solid — a pane of the art showing through, which
+   is what stops the controls reading as a form pasted onto a photo. */
 .ob-choice{
   width:100%;
   text-align:left;
   padding:1.05rem 1.2rem;
   border-radius:var(--kd-radius-sm);
   border:1px solid var(--kd-line);
-  background:var(--kd-surface);
+  background:color-mix(in srgb, var(--kd-surface) 62%, transparent);
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);
+  backdrop-filter:blur(18px) saturate(1.4);
   color:var(--kd-text);
   font-family:inherit;
   font-size:1rem;
@@ -767,7 +818,9 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
   padding:0.55rem 0.9rem;
   border-radius:var(--kd-pill);
   border:1px solid var(--kd-line);
-  background:transparent;
+  background:color-mix(in srgb, var(--kd-surface) 45%, transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(1.3);
+  backdrop-filter:blur(14px) saturate(1.3);
   color:var(--kd-muted);
   font-family:inherit;
   font-size:0.82rem;
@@ -782,14 +835,39 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
   color:var(--kd-on-accent);
 }
 
+/* The actions bar sticks to the bottom of the viewport and frosts what
+   scrolls under it, so a long step never buries Continue. */
 .ob-actions{
   display:flex;
   align-items:center;
   gap:0.6rem;
   flex-wrap:wrap;
-  padding-top:1.75rem;
+  position:sticky;
+  bottom:0;
   margin-top:auto;
-  border-top:1px solid var(--kd-line);
+  /* Bleeds past the inner padding to the screen edges, so it reads as
+     the bottom of the picture rather than a grey card laid on top of
+     it, and fades in from transparent instead of drawing a hard line
+     across the water. */
+  margin-inline:calc(-1 * var(--kd-pad));
+  padding:2.5rem var(--kd-pad) calc(1rem + env(safe-area-inset-bottom));
+}
+/* The wash sits on its own layer behind the buttons. A mask on the bar
+   itself would fade the buttons with it — masks clip the whole subtree. */
+.ob-actions::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--kd-bg) 62%, transparent) 45%,
+    color-mix(in srgb, var(--kd-bg) 92%, transparent) 100%);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+  -webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 40%);
+  mask-image:linear-gradient(180deg,transparent 0%,#000 40%);
 }
 .ob-actions .btn.primary{flex:1;padding:0.85rem 1.2rem;}
 

@@ -52,13 +52,6 @@
   html,body{margin:0;padding:0;background:#08090b;}
   html[data-theme="light"],html[data-theme="light"] body{background:#f7f7f9;}
   html[data-theme="light"] #splash{background:#f7f7f9;}
-  html[data-theme="light"] #splash .splash-art{
-    background:
-      radial-gradient(ellipse 46% 26% at 50% 50%, rgba(247,247,249,0.82), transparent 72%),
-      url('img/splash.webp') center/cover no-repeat,
-      linear-gradient(180deg,#e7ecfb,#f7f7f9 62%);
-    opacity:0.5;
-  }
   html[data-theme="light"] #splash .splash-word{color:#5c6069;}
   html[data-theme="light"] #splash .splash-bar{background:rgba(20,22,27,0.12);}
   #splash{
@@ -75,15 +68,24 @@
   #splash.out{opacity:0;pointer-events:none;}
   /* The scrim sits over the art so the mark holds against the arc.
      Gradients render immediately; the photograph fades in behind. */
+  /* The art is dawn light through linen: bright at the top, falling to
+     deep shadow. The wordmark sits in that lower shadow, so dark mode
+     needs only a light veil, and light mode needs the reverse — the
+     image lifted and the type darkened against it. */
   #splash .splash-art{
     position:absolute;
     inset:0;
     background:
-      radial-gradient(ellipse 46% 26% at 50% 50%, rgba(10,11,14,0.72), transparent 72%),
-      url('img/splash.webp') center/cover no-repeat,
-      linear-gradient(180deg,#0a0f22,#08090b 62%);
+      linear-gradient(180deg,rgba(8,9,11,0.30) 0%,rgba(8,9,11,0.55) 55%,rgba(8,9,11,0.78) 100%),
+      url('img/splash.webp') center/cover no-repeat;
     opacity:0;
     animation:splash-art 1.6s cubic-bezier(0.22,0.7,0.2,1) forwards;
+  }
+  html[data-theme="light"] #splash .splash-art{
+    background:
+      linear-gradient(180deg,rgba(247,247,249,0.28) 0%,rgba(247,247,249,0.55) 55%,rgba(247,247,249,0.88) 100%),
+      url('img/splash.webp') center/cover no-repeat;
+    opacity:0;
   }
   @keyframes splash-art{to{opacity:1;}}
   #splash .splash-mark{
