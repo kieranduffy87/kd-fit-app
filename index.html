@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#08090B">
+<meta name="theme-color" content="#241A22">
 
 <!-- Theme is resolved before the first paint, otherwise a light-mode
      user gets a black splash for a frame and a half. This is the only
@@ -21,7 +21,7 @@
     root.setAttribute('data-accent', cfg.accent || 'blue');
     if(!dark){
       var meta = document.querySelector('meta[name="theme-color"]');
-      if(meta) meta.setAttribute('content', '#f7f7f9');
+      if(meta) meta.setAttribute('content', '#f4e9e8');
     }
   }catch(e){
     document.documentElement.setAttribute('data-theme', 'dark');
@@ -49,11 +49,11 @@
   }
   /* The splash paints before app.css exists, so it carries its own
      two-palette definition rather than waiting for the tokens. */
-  html,body{margin:0;padding:0;background:#08090b;}
-  html[data-theme="light"],html[data-theme="light"] body{background:#f7f7f9;}
-  html[data-theme="light"] #splash{background:#f7f7f9;}
-  html[data-theme="light"] #splash .splash-word{color:#5c6069;}
-  html[data-theme="light"] #splash .splash-bar{background:rgba(20,22,27,0.12);}
+  html,body{margin:0;padding:0;background:#241a22;}
+  html[data-theme="light"],html[data-theme="light"] body{background:#f4e9e8;}
+  html[data-theme="light"] #splash{background:#f4e9e8;}
+  html[data-theme="light"] #splash .splash-word{color:#7c6069;}
+  html[data-theme="light"] #splash .splash-bar{background:rgba(42,29,36,0.14);}
   #splash{
     position:fixed;
     inset:0;
@@ -62,29 +62,35 @@
     place-content:center;
     justify-items:center;
     gap:1.1rem;
-    background:#08090b;
+    background:#241a22;
     transition:opacity 0.55s cubic-bezier(0.22,0.7,0.2,1);
   }
   #splash.out{opacity:0;pointer-events:none;}
   /* The scrim sits over the art so the mark holds against the arc.
      Gradients render immediately; the photograph fades in behind. */
-  /* The art is dawn light through linen: bright at the top, falling to
-     deep shadow. The wordmark sits in that lower shadow, so dark mode
-     needs only a light veil, and light mode needs the reverse — the
-     image lifted and the type darkened against it. */
+  /* The splash carries the same mesh as the app, painted by hand here
+     because it has to appear on the first frame, before app.css has
+     even been requested. No photograph — a still of the app's own
+     ground is a truer opening than a picture of something else. */
   #splash .splash-art{
     position:absolute;
     inset:0;
     background:
-      linear-gradient(180deg,rgba(8,9,11,0.30) 0%,rgba(8,9,11,0.55) 55%,rgba(8,9,11,0.78) 100%),
-      url('img/splash.webp') center/cover no-repeat;
+      radial-gradient(ellipse 70% 55% at 15% 10%, rgba(244,120,92,0.34), transparent 66%),
+      radial-gradient(ellipse 65% 50% at 88% 22%, rgba(214,150,148,0.32), transparent 68%),
+      radial-gradient(ellipse 85% 60% at 76% 90%, rgba(176,138,168,0.34), transparent 70%),
+      radial-gradient(ellipse 70% 55% at 8% 86%,  rgba(236,170,140,0.24), transparent 68%),
+      linear-gradient(170deg,#3a2733 0%,#241a22 62%);
     opacity:0;
     animation:splash-art 1.6s cubic-bezier(0.22,0.7,0.2,1) forwards;
   }
   html[data-theme="light"] #splash .splash-art{
     background:
-      linear-gradient(180deg,rgba(247,247,249,0.28) 0%,rgba(247,247,249,0.55) 55%,rgba(247,247,249,0.88) 100%),
-      url('img/splash.webp') center/cover no-repeat;
+      radial-gradient(ellipse 70% 55% at 15% 10%, rgba(244,120,92,0.22), transparent 66%),
+      radial-gradient(ellipse 65% 50% at 88% 22%, rgba(214,150,148,0.24), transparent 68%),
+      radial-gradient(ellipse 85% 60% at 76% 90%, rgba(176,138,168,0.22), transparent 70%),
+      radial-gradient(ellipse 70% 55% at 8% 86%,  rgba(236,170,140,0.20), transparent 68%),
+      linear-gradient(170deg,#fbeef0 0%,#f4e9e8 62%);
     opacity:0;
   }
   @keyframes splash-art{to{opacity:1;}}
@@ -100,17 +106,17 @@
   #splash .splash-mark svg{height:100%;width:auto;display:block;}
   /* One colour, taken from the accent. The map is duplicated here
      because app.css hasn't loaded yet when the splash paints. */
-  #splash .splash-mark{color:#0339f8;}
-  html[data-accent="violet"] #splash .splash-mark{color:#7c3aed;}
-  html[data-accent="rose"] #splash .splash-mark{color:#e11d63;}
-  html[data-accent="amber"] #splash .splash-mark{color:#d97706;}
-  html[data-accent="green"] #splash .splash-mark{color:#059669;}
-  html[data-accent="teal"] #splash .splash-mark{color:#0891b2;}
-  html[data-accent="violet"] #splash .splash-bar i{background:#7c3aed;}
-  html[data-accent="rose"] #splash .splash-bar i{background:#e11d63;}
-  html[data-accent="amber"] #splash .splash-bar i{background:#d97706;}
-  html[data-accent="green"] #splash .splash-bar i{background:#059669;}
-  html[data-accent="teal"] #splash .splash-bar i{background:#0891b2;}
+  #splash .splash-mark{color:#f4785c;}
+  html[data-accent="violet"] #splash .splash-mark{color:#a274d4;}
+  html[data-accent="rose"] #splash .splash-mark{color:#e8698c;}
+  html[data-accent="amber"] #splash .splash-mark{color:#e8a34e;}
+  html[data-accent="green"] #splash .splash-mark{color:#5fae8d;}
+  html[data-accent="teal"] #splash .splash-mark{color:#5aa5b8;}
+  html[data-accent="violet"] #splash .splash-bar i{background:#a274d4;}
+  html[data-accent="rose"] #splash .splash-bar i{background:#e8698c;}
+  html[data-accent="amber"] #splash .splash-bar i{background:#e8a34e;}
+  html[data-accent="green"] #splash .splash-bar i{background:#5fae8d;}
+  html[data-accent="teal"] #splash .splash-bar i{background:#5aa5b8;}
   #splash .splash-word{
     position:relative;
     font-family:'Instrument Sans','Helvetica Neue',Arial,sans-serif;
@@ -118,7 +124,7 @@
     font-weight:500;
     letter-spacing:0.14em;
     text-transform:uppercase;
-    color:#8f939d;
+    color:#b9a3aa;
     opacity:0;
     transform:translateY(1rem);
     filter:blur(6px);
@@ -130,14 +136,14 @@
     width:104px;
     height:2px;
     border-radius:2px;
-    background:rgba(236,238,242,0.13);
+    background:rgba(246,238,240,0.16);
     overflow:hidden;
   }
   #splash .splash-bar i{
     display:block;
     height:100%;
     width:100%;
-    background:#0339f8;
+    background:#f4785c;
     transform:scaleX(0);
     transform-origin:left;
     animation:splash-bar 1.15s cubic-bezier(0.22,0.7,0.2,1) 0.3s forwards;

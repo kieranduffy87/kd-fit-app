@@ -37,17 +37,20 @@
 
   /* dark is the default, so it lives on the bare :root — a page with
      no data-theme still paints correctly before any script runs */
-  --kd-bg:#0b0809;   /* warm black */
-  --kd-glass:62%;    /* how solid a card sits over the mesh */
-  --kd-text:#eceef2;
-  --kd-text-rgb:236 238 242;
-  --kd-muted:#9a9088;
-  --kd-line:rgb(var(--kd-text-rgb) / 0.13);
-  --kd-surface:#15100f;
-  --kd-surface-2:#1d1715;
+  /* Dusk, not night. The reference sits mid-tone — a dusty plum you
+     could still call dark — and that is what lets glass read as glass:
+     a panel over true black has nothing to be translucent against. */
+  --kd-bg:#241a22;
+  --kd-glass:62%;
+  --kd-text:#f6eef0;
+  --kd-text-rgb:246 238 240;
+  --kd-muted:#b9a3aa;
+  --kd-line:rgb(var(--kd-text-rgb) / 0.16);
+  --kd-surface:#31232c;
+  --kd-surface-2:#3d2c36;
   --kd-instrument:var(--kd-paper-white);
   --kd-on-accent:#fff;
-  --kd-sky:#150f11;   /* warm near-black, not navy — the mesh supplies the colour */
+  --kd-sky:#3a2733;   /* the mesh supplies the colour; this is only its floor */
   --kd-shadow:none;
   /* The unlit state of every instrument — gauge segments, the dial
      track, empty tally bars. On glass a whisper of the text colour is
@@ -92,20 +95,20 @@
   /* The page is a shade deeper than the cards, not the same white, so
      a card is an object sitting on a surface rather than an outline
      drawn on the void. That separation is what light mode was missing. */
-  --kd-bg:#f6f1ed;   /* warm paper */
+  --kd-bg:#f4e9e8;   /* blush paper */
   --kd-glass:72%;
-  --kd-text:#14161b;
-  --kd-text-rgb:20 22 27;
-  --kd-muted:#6a6058;
+  --kd-text:#2a1d24;
+  --kd-text-rgb:42 29 36;
+  --kd-muted:#7c6069;
   --kd-line:rgb(var(--kd-text-rgb) / 0.14);
-  --kd-surface:#ffffff;
+  --kd-surface:#fffafa;
   /* Well clear of the background — this is the empty state of every
      bar and gauge, and at 2% away it read as nothing at all. */
-  --kd-surface-2:#e4ddd6;
+  --kd-surface-2:#e6d6d6;
   --kd-track:rgb(var(--kd-text-rgb) / 0.16);
   --kd-glow:0.18;
-  --kd-instrument:#2a2d34;
-  --kd-sky:#fbf0e8;   /* warm paper */
+  --kd-instrument:#4a3540;
+  --kd-sky:#fbeef0;
   --kd-shadow:0 1px 2px rgb(var(--kd-text-rgb) / 0.06),0 10px 28px rgb(var(--kd-text-rgb) / 0.08);
   --kd-wash-1:0.07;
   --kd-wash-2:0.05;
@@ -114,34 +117,35 @@
 }
 
 /* ---------- accents ----------
-   Six, each given a deep partner for the ambient wash. They are picked
-   to hold their own against both palettes — nothing so pale it vanishes
-   on paper, nothing so dark it disappears on glass. */
+   Softer and warmer than the originals, which were pure screen hues
+   and fought the dusty ground. Coral leads because it is the one
+   colour the reference uses for anything that matters. Each has a
+   deep partner that feeds the mesh rather than any UI surface. */
 :root{
-  --kd-accent:#0339f8;
-  --kd-accent-rgb:3 57 248;
-  --kd-accent-deep:#01145a;
-  --kd-accent-deep-rgb:1 20 90;
-}
-:root[data-accent="violet"]{
-  --kd-accent:#7c3aed;   --kd-accent-rgb:124 58 237;
-  --kd-accent-deep:#2e1065; --kd-accent-deep-rgb:46 16 101;
+  --kd-accent:#f4785c;
+  --kd-accent-rgb:244 120 92;
+  --kd-accent-deep:#7a3244;
+  --kd-accent-deep-rgb:122 50 68;
 }
 :root[data-accent="rose"]{
-  --kd-accent:#e11d63;   --kd-accent-rgb:225 29 99;
-  --kd-accent-deep:#500724; --kd-accent-deep-rgb:80 7 36;
+  --kd-accent:#e8698c;   --kd-accent-rgb:232 105 140;
+  --kd-accent-deep:#6d2646; --kd-accent-deep-rgb:109 38 70;
+}
+:root[data-accent="violet"]{
+  --kd-accent:#a274d4;   --kd-accent-rgb:162 116 212;
+  --kd-accent-deep:#432a63; --kd-accent-deep-rgb:67 42 99;
 }
 :root[data-accent="amber"]{
-  --kd-accent:#d97706;   --kd-accent-rgb:217 119 6;
-  --kd-accent-deep:#451a03; --kd-accent-deep-rgb:69 26 3;
+  --kd-accent:#e8a34e;   --kd-accent-rgb:232 163 78;
+  --kd-accent-deep:#6b3d1f; --kd-accent-deep-rgb:107 61 31;
 }
 :root[data-accent="green"]{
-  --kd-accent:#059669;   --kd-accent-rgb:5 150 105;
-  --kd-accent-deep:#022c22; --kd-accent-deep-rgb:2 44 34;
+  --kd-accent:#5fae8d;   --kd-accent-rgb:95 174 141;
+  --kd-accent-deep:#254a3e; --kd-accent-deep-rgb:37 74 62;
 }
 :root[data-accent="teal"]{
-  --kd-accent:#0891b2;   --kd-accent-rgb:8 145 178;
-  --kd-accent-deep:#083344; --kd-accent-deep-rgb:8 51 68;
+  --kd-accent:#5aa5b8;   --kd-accent-rgb:90 165 184;
+  --kd-accent-deep:#23484f; --kd-accent-deep-rgb:35 72 79;
 }
 
 /* A colour change should feel like a change of light, not a repaint. */
@@ -236,9 +240,9 @@ body{
    on the compositor and never triggers layout.
    ============================================================ */
 :root{
-  --mesh-warm-1:255 154 108;   /* peach   */
-  --mesh-warm-2:244 114 152;   /* rose    */
-  --mesh-warm-3:255 199 122;   /* gold    */
+  --mesh-warm-1:214 150 148;   /* dusty rose  */
+  --mesh-warm-2:176 138 168;   /* mauve       */
+  --mesh-warm-3:236 170 140;   /* warm sand   */
   --mesh-alpha:0.55;
   --mesh-blur:76px;
   /* Screen on a dark ground makes the blobs behave like coloured
@@ -848,47 +852,25 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 }
 .onboard[hidden]{display:none;}
 
-/* ---------- the art ----------
-   Two fixed layers, one per image, cross-faded by [data-art] as the
-   steps advance: first light for the opening pair, the calmer water
-   for the closing pair. Both are pale, so the scrim has to invert per
-   theme — dark text needs the image lifted, light text needs it sunk,
-   and without that one of the two themes loses its type entirely. */
-.onboard::before,
-.onboard::after{
+/* ---------- the ground ----------
+   Onboarding carries the same mesh as the app rather than photography.
+   It is painted as static radials instead of the drifting blobs: this
+   sits above the app's own mesh and must be opaque enough to hide it,
+   and a second set of animating layers over the first is more motion
+   than a setup screen needs. */
+.onboard::before{
   content:'';
   position:fixed;
   inset:0;
-  background-size:cover;
-  background-position:center;
-  opacity:0;
-  transition:opacity 1.1s var(--kd-ease);
   pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 8%,  rgb(var(--kd-accent-rgb) / 0.30), transparent 66%),
+    radial-gradient(ellipse 65% 50% at 88% 18%, rgb(var(--mesh-warm-1) / 0.34), transparent 68%),
+    radial-gradient(ellipse 85% 60% at 78% 92%, rgb(var(--mesh-warm-2) / 0.32), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 8% 88%,  rgb(var(--mesh-warm-3) / 0.26), transparent 68%),
+    linear-gradient(170deg, var(--kd-sky) 0%, var(--kd-bg) 62%);
 }
-/* The scrim is a gradient, not a flat veil, and it rides on the same
-   layer as the photo so the two fade together. Flat coverage heavy
-   enough to carry the heading turned the whole image to mud; weighting
-   it to the top — where the type is — leaves the lower two thirds of
-   the picture actually visible. */
-.onboard::before{background-image:var(--ob-scrim),url('../img/ob-1.webp');}
-.onboard::after{background-image:var(--ob-scrim),url('../img/ob-2.webp');}
-.onboard[data-art="1"]::before{opacity:1;}
-.onboard[data-art="2"]::after{opacity:1;}
 
-:root{
-  --ob-scrim:linear-gradient(180deg,
-    rgb(8 9 11 / 0.88) 0%,
-    rgb(8 9 11 / 0.66) 34%,
-    rgb(8 9 11 / 0.34) 62%,
-    rgb(8 9 11 / 0.30) 100%);
-}
-:root[data-theme="light"]{
-  --ob-scrim:linear-gradient(180deg,
-    rgb(252 252 253 / 0.80) 0%,
-    rgb(252 252 253 / 0.52) 34%,
-    rgb(252 252 253 / 0.20) 62%,
-    rgb(252 252 253 / 0.14) 100%);
-}
 .ob-inner{
   position:relative;   /* above the two art layers */
   z-index:1;

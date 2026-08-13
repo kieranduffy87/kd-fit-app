@@ -120,13 +120,15 @@ const STARTER_PACKS = {
 };
 
 const THEMES = ['system', 'dark', 'light'];
+/* `blue` is kept as the id of the default so stored configs still
+   resolve — it is coral now, which is what the swatch shows. */
 const ACCENTS = [
-  { id: 'blue',   label: 'Blue',   hex: '#0339f8' },
-  { id: 'violet', label: 'Violet', hex: '#7c3aed' },
-  { id: 'rose',   label: 'Rose',   hex: '#e11d63' },
-  { id: 'amber',  label: 'Amber',  hex: '#d97706' },
-  { id: 'green',  label: 'Green',  hex: '#059669' },
-  { id: 'teal',   label: 'Teal',   hex: '#0891b2' }
+  { id: 'blue',   label: 'Coral',  hex: '#f4785c' },
+  { id: 'rose',   label: 'Rose',   hex: '#e8698c' },
+  { id: 'violet', label: 'Violet', hex: '#a274d4' },
+  { id: 'amber',  label: 'Amber',  hex: '#e8a34e' },
+  { id: 'green',  label: 'Green',  hex: '#5fae8d' },
+  { id: 'teal',   label: 'Teal',   hex: '#5aa5b8' }
 ];
 
 const DEFAULT_CONFIG = {
@@ -279,7 +281,7 @@ function applyTheme(){
   // or the notch area stays the old colour.
   const meta = document.querySelector('meta[name="theme-color"]');
   if(meta){
-    meta.setAttribute('content', theme === 'light' ? '#f7f7f9' : '#08090b');
+    meta.setAttribute('content', theme === 'light' ? '#f4e9e8' : '#241a22');
   }
   // Enables the cross-fade only after the first paint, so loading the
   // app in light mode doesn't animate from dark.
@@ -1852,9 +1854,6 @@ function renderOnboarding(){
   const last = s.step === 3;
 
   host.hidden = false;
-  // First light carries the opening pair, the calmer water the closing
-  // pair — so moving through setup reads as a day passing.
-  host.setAttribute('data-art', s.step < 2 ? '1' : '2');
   document.body.style.overflow = 'hidden';
   host.innerHTML = `
     <div class="ob-inner">
