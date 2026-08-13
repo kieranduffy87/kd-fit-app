@@ -244,7 +244,6 @@ body{
   --mesh-warm-2:176 138 168;   /* mauve       */
   --mesh-warm-3:236 170 140;   /* warm sand   */
   --mesh-alpha:0.55;
-  --mesh-blur:76px;
   /* Screen on a dark ground makes the blobs behave like coloured
      light rather than paint — overlaps get brighter instead of
      muddier, which is exactly what a five-colour mesh needs. */
@@ -256,7 +255,6 @@ body{
   /* On paper the same blobs must behave like pigment, not light —
      multiply keeps the overlaps rich instead of blowing them out. */
   --mesh-alpha:0.62;
-  --mesh-blur:88px;
   --mesh-blend:multiply;
 }
 
@@ -269,42 +267,59 @@ body{
   background:linear-gradient(175deg,var(--kd-sky) 0%,var(--kd-bg) 58%);
   transition:opacity 1.2s var(--kd-ease);
 }
+/* No filter: blur() here, deliberately.
+
+   Blurring five viewport-sized layers is one of the most expensive
+   things you can ask a mobile GPU to do, and iOS quietly drops or
+   flattens large blurs under memory pressure — which is exactly how a
+   mesh ends up invisible on a phone while looking perfect on a Mac.
+   The same softness comes free from a radial gradient with enough
+   stops, costs nothing to composite, and cannot be optimised away.
+
+   will-change is gone for the same reason: five promoted layers at
+   full viewport size is a lot of texture memory to hold permanently,
+   and transform animations are composited anyway. */
 .blob{
   position:absolute;
   border-radius:50%;
-  filter:blur(var(--mesh-blur));
   opacity:var(--mesh-alpha);
   mix-blend-mode:var(--mesh-blend);
-  will-change:transform;
+  transform:translate3d(0,0,0);
+}
+/* Blending is the one part that genuinely may not survive; where it
+   isn't supported the mesh simply layers normally and is a little
+   flatter, rather than disappearing. */
+@supports not (mix-blend-mode: screen){
+  .blob{ mix-blend-mode:normal; opacity:calc(var(--mesh-alpha) * 0.8); }
 }
 .blob-1{
-  width:78vw; height:78vw;
+  width:110vw; height:110vw;
   top:-24vw; left:-18vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-rgb)) 0%, transparent 68%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-rgb) / 0.75) 0%, rgb(var(--kd-accent-rgb) / 0.52) 24%, rgb(var(--kd-accent-rgb) / 0.28) 45%, rgb(var(--kd-accent-rgb) / 0.10) 65%, rgb(var(--kd-accent-rgb) / 0.02) 80%, transparent 92%);
   animation:drift-1 34s var(--kd-ease) infinite alternate;
 }
 .blob-2{
-  width:66vw; height:66vw;
+  width:96vw; height:96vw;
   top:-8vw; right:-20vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-1)) 0%, transparent 68%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-1) / 0.75) 0%, rgb(var(--mesh-warm-1) / 0.52) 24%, rgb(var(--mesh-warm-1) / 0.28) 45%, rgb(var(--mesh-warm-1) / 0.10) 65%, rgb(var(--mesh-warm-1) / 0.02) 80%, transparent 92%);
   animation:drift-2 41s var(--kd-ease) infinite alternate;
 }
 .blob-3{
-  width:84vw; height:84vw;
+  width:118vw; height:118vw;
   top:32vh; left:-30vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-2)) 0%, transparent 66%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-2) / 0.75) 0%, rgb(var(--mesh-warm-2) / 0.52) 24%, rgb(var(--mesh-warm-2) / 0.28) 45%, rgb(var(--mesh-warm-2) / 0.10) 65%, rgb(var(--mesh-warm-2) / 0.02) 80%, transparent 92%);
   animation:drift-3 47s var(--kd-ease) infinite alternate;
 }
 .blob-4{
-  width:70vw; height:70vw;
+  width:104vw; height:104vw;
   bottom:-22vw; right:-14vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-3)) 0%, transparent 68%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-3) / 0.75) 0%, rgb(var(--mesh-warm-3) / 0.52) 24%, rgb(var(--mesh-warm-3) / 0.28) 45%, rgb(var(--mesh-warm-3) / 0.10) 65%, rgb(var(--mesh-warm-3) / 0.02) 80%, transparent 92%);
   animation:drift-4 38s var(--kd-ease) infinite alternate;
 }
 .blob-5{
-  width:56vw; height:56vw;
+  width:88vw; height:88vw;
   bottom:6vh; left:8vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-deep-rgb)) 0%, transparent 70%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-deep-rgb) / 0.75) 0%, rgb(var(--kd-accent-deep-rgb) / 0.52) 24%, rgb(var(--kd-accent-deep-rgb) / 0.28) 45%, rgb(var(--kd-accent-deep-rgb) / 0.10) 65%, rgb(var(--kd-accent-deep-rgb) / 0.02) 80%, transparent 92%);
   opacity:calc(var(--mesh-alpha) * 0.7);
   animation:drift-5 53s var(--kd-ease) infinite alternate;
 }
@@ -564,7 +579,33 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
   box-shadow:inset 0 1px 0 var(--glass-edge);
 }
 
-.tally-row{display:grid;grid-template-columns:repeat(28,1fr);gap:3px;height:34px;}
+/* Scrolls, because it now runs past today into the days ahead. The
+   grid is gone — fixed-width cells are what let it centre on today. */
+.tally-row{
+  display:flex;
+  align-items:flex-end;
+  gap:4px;
+  height:40px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-behavior:smooth;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  /* Trailing room so today can actually reach the middle. Without it
+     the strip runs out of content to the right and today parks a few
+     dozen pixels short of centre. */
+  padding:0 42vw 2px 0;
+}
+.tally-row::-webkit-scrollbar{display:none;}
+.tally-row .tally{flex:0 0 9px;}
+/* Days that haven't happened — outlined, not filled. Not a failure,
+   just not yet. */
+.tally.ahead{
+  background:transparent;
+  border:1px solid var(--kd-line);
+  opacity:0.55;
+}
+.tally-axis span:nth-child(2){color:var(--kd-accent);}
 /* Which way time runs. Cheap to add, and it stops the flipped order
    from being a puzzle. */
 .tally-axis{
@@ -1560,3 +1601,48 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
 
 /* The ledger is now interactive, so it should say so. */
 .tally,.ycell{cursor:pointer;}
+
+/* ============================================================
+   The cover
+
+   Step -1 of onboarding: the mark, a face, and the promise. It carries
+   a photograph where the rest of the app does not, because this is the
+   one screen you see once — the objection to imagery was always that
+   you can't dismiss it on a screen you open daily, and this isn't one.
+   ============================================================ */
+.onboard.is-cover::before{
+  background:
+    linear-gradient(180deg,
+      rgb(20 12 16 / 0.55) 0%,
+      rgb(20 12 16 / 0.10) 34%,
+      rgb(20 12 16 / 0.30) 68%,
+      rgb(20 12 16 / 0.86) 100%),
+    url('../img/intro.jpg') center/cover no-repeat;
+}
+.ob-cover{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:64vh;
+  padding-top:1rem;
+}
+.ob-cover-mark{
+  align-self:center;
+  width:94px;
+  color:#fff;
+  filter:drop-shadow(0 2px 18px rgb(0 0 0 / 0.45));
+}
+.ob-cover-mark svg{width:100%;height:auto;display:block;}
+/* The tagline sits low, over the darkest part of the gradient. */
+.ob-cover-line{
+  font-size:clamp(1.5rem,6.4vw,1.9rem);
+  font-weight:600;
+  letter-spacing:var(--kd-track-display);
+  color:#fff;
+  text-align:center;
+  margin-bottom:0.5rem;
+}
+.ob-cover-line em{font-style:normal;color:var(--kd-accent);}
+/* On the cover the copy is always light — it sits on a photograph, not
+   on the theme's surface. */
+.onboard.is-cover .ob-actions .btn.primary{width:100%;}

@@ -160,6 +160,11 @@ const GOOD_DAY = 0.7;
    from whatever it sits in — the supplied file hardcodes #231f20,
    which would vanish against the dark theme. */
 const KD_MARK = `<svg viewBox="0 0 68.02 102.03" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="currentColor"><path d="M34,34.01C34,52.79,18.79,68.02,0,68.02v34.01c37.56,0,68.01-30.46,68.01-68.02h-34.01Z"/><rect width="34.01" height="34.01"/></svg>`;
+/* The stacked lockup (icons/jotara-lockup.svg), inlined so it inherits
+   its colour. Used on the intro screen only — the app's own masthead
+   carries the mark alone. */
+const JOTARA_LOCKUP = `<svg viewBox="0 0 94 94" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true"><path d="M32.0498 63.9876H28.0645V67.9603H32.0498V63.9876Z"/><path d="M7.94545 60.0148H3.96008V63.9876H7.94545V60.0148Z"/><path d="M7.96567 67.9603V86.0595C7.96567 90.4457 4.39503 94.005 0 94.005V90.0323C2.19499 90.0323 3.98031 88.2526 3.98031 86.0595V67.9603H7.96567Z"/><path d="M10.1354 76.7931C10.1354 71.5045 14.4849 67.5318 19.5576 67.5318C24.6304 67.5318 28.9799 71.5045 28.9799 76.7931C28.9799 82.0817 24.6 86.0545 19.5576 86.0545C14.5152 86.0545 10.1354 82.0817 10.1354 76.7931ZM24.863 76.7931C24.863 73.6069 22.5264 71.1466 19.5576 71.1466C16.5888 71.1466 14.2522 73.6119 14.2522 76.7931C14.2522 79.9744 16.5888 82.4397 19.5576 82.4397C22.5264 82.4397 24.863 79.9744 24.863 76.7931Z"/><path d="M32.0498 79.7172V67.9603H41.1079V71.3735H36.0352V79.6164C36.0352 81.2247 36.7281 82.2128 38.5083 82.2128C39.53 82.2128 40.4504 82.0464 41.113 81.9154V85.5302C40.324 85.7621 39.4996 85.9587 38.1492 85.9587C34.6241 85.9587 32.0549 83.7908 32.0549 79.7172H32.0498Z"/><path d="M42.6555 76.7931C42.6555 71.5045 46.5751 67.5318 51.6175 67.5318C53.7569 67.5318 56.0631 68.6813 57.282 70.2593V67.9603H61.0398V85.626H57.282V83.327C56.0631 84.905 53.7923 86.0545 51.6175 86.0545C46.5751 86.0545 42.6555 82.0817 42.6555 76.7931ZM57.0848 76.7931C57.0848 73.7732 54.91 71.1466 51.9463 71.1466C48.9825 71.1466 46.7724 73.743 46.7724 76.7931C46.7724 79.8433 48.9471 82.4397 51.9463 82.4397C54.9454 82.4397 57.0848 79.813 57.0848 76.7931Z"/><path d="M63.8316 85.626V67.9603H67.6855L67.6501 70.8491C68.2772 69.503 70.0524 67.5318 73.0515 67.5318C73.7748 67.5318 74.4019 67.6326 74.7307 67.7284V71.6709C74.3008 71.5398 73.709 71.439 73.0819 71.439C70.1182 71.439 67.8119 73.5716 67.8119 77.746V85.626H63.8265H63.8316Z"/><path d="M75.6157 76.7931C75.6157 71.5045 79.5353 67.5318 84.5777 67.5318C86.7171 67.5318 89.0233 68.6813 90.2422 70.2593V67.9603H94V85.626H90.2422V83.327C89.0233 84.905 86.7525 86.0545 84.5777 86.0545C79.5353 86.0545 75.6157 82.0817 75.6157 76.7931ZM90.045 76.7931C90.045 73.7732 87.8702 71.1466 84.9065 71.1466C81.9427 71.1466 79.7326 73.743 79.7326 76.7931C79.7326 79.8433 81.9073 82.4397 84.9065 82.4397C87.9056 82.4397 90.045 79.813 90.045 76.7931Z"/><path d="M48.9876 17.1464C48.9876 26.6144 41.29 34.2927 31.7919 34.2927V51.4391C50.7881 51.4391 66.1884 36.0825 66.1884 17.1464H48.9876Z"/><path d="M48.9927 0H31.7919V17.1464H48.9927V0Z"/></svg>`;
+
 const ICON_COG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
 
 const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
@@ -1164,36 +1169,62 @@ function wireLedgerCells(){
 }
 
 function buildTally(){
-  /* Newest first. Chronological order put today at the far right, which
-     reads as though the chart starts in the wrong corner — everything
-     else on the page starts at the left. Reversed, the eye lands on
-     today first and history trails off behind it, and the axis caption
-     below says which way time runs so it can't be misread. */
-  const days = recentHistory().slice().reverse();
+  /* A timeline, not a chart. Today sits in the middle with finished
+     days behind it and the days ahead in front — which is how a week
+     is actually pictured. Both earlier orderings were wrong for the
+     same reason: they treated the run as a chart with an axis, so
+     "now" ended up pinned to one edge with nothing on the other side
+     of it.
+
+     Days ahead are drawn as empty outlines. They are not failures, they
+     just haven't happened, and they give the strip somewhere to run to. */
+  const AHEAD = 7;
+  const back = HISTORY_DAYS - 1;
+  const days = historyFrom(addDays(midnight(new Date()), -back), HISTORY_DAYS + AHEAD);
   const { grace } = streakInfo(recentHistory());
   const tKey = dayKey();
+  const todayTime = midnight(new Date()).getTime();
 
-  el.ledgerLabel.textContent = 'Last 28 days';
+  el.ledgerLabel.textContent = 'Your run';
   el.ledgerBody.innerHTML = `<div class="tally-row" data-tally>${
     days.map((d, i) => {
+      const future = d.date.getTime() > todayTime;
       const ratio = d.total ? Math.min(d.done / d.total, 1) : 0;
       const cls = ['tally'];
-      if(d.key === tKey) cls.push('today');
-      if(isGoodDay(d)) cls.push('full');
-      else if(d.done > 0) cls.push('partial');
-      if(grace.has(d.key)) cls.push('grace');
-      const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })
-        + (grace.has(d.key) ? ' — missed, streak carried' : '');
-      return `<div class="${cls.join(' ')}" data-day="${d.key}"
-        style="height:${38 + ratio * 62}%;${REDUCED_MOTION ? '' : `animation:kd-tally-in 0.5s var(--kd-ease) ${320 + i * 14}ms both`}"
-        title="${label} — ${d.done}/${d.total}"></div>`;
+      if(future) cls.push('ahead');
+      else {
+        if(d.key === tKey) cls.push('today');
+        if(isGoodDay(d)) cls.push('full');
+        else if(d.done > 0) cls.push('partial');
+        if(grace.has(d.key)) cls.push('grace');
+      }
+      const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+      const title = future ? `${label} — not yet`
+        : `${label} — ${d.done}/${d.total}${grace.has(d.key) ? ' · streak carried' : ''}`;
+      const height = future ? 26 : 38 + ratio * 62;
+      return `<div class="${cls.join(' ')}" data-day="${future ? '' : d.key}"
+        style="height:${height}%;${REDUCED_MOTION ? '' : `animation:kd-tally-in 0.5s var(--kd-ease) ${320 + i * 12}ms both`}"
+        title="${title}"></div>`;
     }).join('')
   }</div>
   <div class="tally-axis">
-    <span>Today</span>
-    <span>28 days ago</span>
+    <span>28 days back</span>
+    <span data-tally-today>Today</span>
+    <span>Ahead</span>
   </div>`;
   el.tally = document.querySelector('[data-tally]');
+
+  /* Land on today rather than on either end. Deferred a frame: at this
+     point the row has just been written into the DOM and has no layout
+     yet, so offsetLeft and clientWidth are both zero. `auto` avoids
+     animating the initial placement. */
+  const row = el.tally;
+  if(row) requestAnimationFrame(() => {
+    const cell = row.querySelector(`[data-day="${tKey}"]`);
+    if(!cell) return;
+    const to = cell.offsetLeft - row.clientWidth / 2 + cell.offsetWidth / 2;
+    row.scrollTo({ left: Math.max(0, to), behavior: 'auto' });
+  });
   wireLedgerCells();
 }
 
@@ -2069,7 +2100,7 @@ function needsOnboarding(){
 
 function startOnboarding(){
   onboardState = {
-    step: 0,
+    step: -1,
     focus: null,
     picks: new Set(),
     weekly: [],
@@ -2126,6 +2157,17 @@ function skipOnboarding(){
 
 function onboardStepMarkup(){
   const s = onboardState;
+
+  /* Step -1 is the cover: the mark, a face, and the promise. Nothing to
+     answer yet — a wall of questions as the very first thing you see is
+     how an app loses someone before it has said what it is. */
+  if(s.step === -1){
+    return `
+      <div class="ob-step ob-cover">
+        <div class="ob-cover-mark">${JOTARA_LOCKUP}</div>
+        <div class="ob-cover-line">Your Life, <em>Logged.</em></div>
+      </div>`;
+  }
 
   if(s.step === 0){
     return `
@@ -2236,16 +2278,19 @@ function renderOnboarding(){
 
   host.hidden = false;
   document.body.style.overflow = 'hidden';
+  const cover = s.step === -1;
+  host.classList.toggle('is-cover', cover);
   host.innerHTML = `
     <div class="ob-inner">
-      <div class="ob-progress" aria-hidden="true">
+      ${cover ? '' : `<div class="ob-progress" aria-hidden="true">
         ${[0, 1, 2, 3].map(i => `<i class="${i <= s.step ? 'on' : ''}"></i>`).join('')}
-      </div>
+      </div>`}
       ${onboardStepMarkup()}
       <div class="ob-actions">
         ${s.step > 0 ? '<button class="btn" type="button" data-ob-back>Back</button>' : ''}
-        <button class="btn primary" type="button" data-ob-next>${last ? 'Start' : 'Continue'}</button>
-        ${!last ? '<button class="btn ghost" type="button" data-ob-skip>Skip setup</button>' : ''}
+        <button class="btn primary" type="button" data-ob-next>${
+          cover ? 'Get started' : last ? 'Start' : 'Continue'}</button>
+        ${(!last && !cover) ? '<button class="btn ghost" type="button" data-ob-skip>Skip setup</button>' : ''}
       </div>
     </div>`;
   wireOnboarding(host);
