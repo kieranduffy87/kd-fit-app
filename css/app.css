@@ -244,6 +244,7 @@ body{
   --mesh-warm-2:176 138 168;   /* mauve       */
   --mesh-warm-3:236 170 140;   /* warm sand   */
   --mesh-alpha:0.55;
+  --mesh-blur:76px;
   /* Screen on a dark ground makes the blobs behave like coloured
      light rather than paint — overlaps get brighter instead of
      muddier, which is exactly what a five-colour mesh needs. */
@@ -255,6 +256,7 @@ body{
   /* On paper the same blobs must behave like pigment, not light —
      multiply keeps the overlaps rich instead of blowing them out. */
   --mesh-alpha:0.62;
+  --mesh-blur:88px;
   --mesh-blend:multiply;
 }
 
@@ -267,59 +269,52 @@ body{
   background:linear-gradient(175deg,var(--kd-sky) 0%,var(--kd-bg) 58%);
   transition:opacity 1.2s var(--kd-ease);
 }
-/* No filter: blur() here, deliberately.
+/* The blur is back. I had swapped it for multi-stop gradients on a
+   performance hunch, and the hunch cost the look — the gradients read
+   as flat bands where the blur reads as light. The real device report
+   was about the gauge bloom, not this, so the trade was never needed.
 
-   Blurring five viewport-sized layers is one of the most expensive
-   things you can ask a mobile GPU to do, and iOS quietly drops or
-   flattens large blurs under memory pressure — which is exactly how a
-   mesh ends up invisible on a phone while looking perfect on a Mac.
-   The same softness comes free from a radial gradient with enough
-   stops, costs nothing to composite, and cannot be optimised away.
-
-   will-change is gone for the same reason: five promoted layers at
-   full viewport size is a lot of texture memory to hold permanently,
-   and transform animations are composited anyway. */
+   will-change stays off: five permanently promoted full-screen layers
+   is real memory for no visual gain, and transforms composite anyway. */
 .blob{
   position:absolute;
   border-radius:50%;
+  filter:blur(var(--mesh-blur));
   opacity:var(--mesh-alpha);
   mix-blend-mode:var(--mesh-blend);
   transform:translate3d(0,0,0);
 }
-/* Blending is the one part that genuinely may not survive; where it
-   isn't supported the mesh simply layers normally and is a little
-   flatter, rather than disappearing. */
 @supports not (mix-blend-mode: screen){
   .blob{ mix-blend-mode:normal; opacity:calc(var(--mesh-alpha) * 0.8); }
 }
 .blob-1{
-  width:110vw; height:110vw;
+  width:78vw; height:78vw;
   top:-24vw; left:-18vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-rgb) / 0.75) 0%, rgb(var(--kd-accent-rgb) / 0.52) 24%, rgb(var(--kd-accent-rgb) / 0.28) 45%, rgb(var(--kd-accent-rgb) / 0.10) 65%, rgb(var(--kd-accent-rgb) / 0.02) 80%, transparent 92%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-rgb)) 0%, transparent 68%);
   animation:drift-1 34s var(--kd-ease) infinite alternate;
 }
 .blob-2{
-  width:96vw; height:96vw;
+  width:66vw; height:66vw;
   top:-8vw; right:-20vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-1) / 0.75) 0%, rgb(var(--mesh-warm-1) / 0.52) 24%, rgb(var(--mesh-warm-1) / 0.28) 45%, rgb(var(--mesh-warm-1) / 0.10) 65%, rgb(var(--mesh-warm-1) / 0.02) 80%, transparent 92%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-1)) 0%, transparent 68%);
   animation:drift-2 41s var(--kd-ease) infinite alternate;
 }
 .blob-3{
-  width:118vw; height:118vw;
+  width:84vw; height:84vw;
   top:32vh; left:-30vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-2) / 0.75) 0%, rgb(var(--mesh-warm-2) / 0.52) 24%, rgb(var(--mesh-warm-2) / 0.28) 45%, rgb(var(--mesh-warm-2) / 0.10) 65%, rgb(var(--mesh-warm-2) / 0.02) 80%, transparent 92%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-2)) 0%, transparent 66%);
   animation:drift-3 47s var(--kd-ease) infinite alternate;
 }
 .blob-4{
-  width:104vw; height:104vw;
+  width:70vw; height:70vw;
   bottom:-22vw; right:-14vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-3) / 0.75) 0%, rgb(var(--mesh-warm-3) / 0.52) 24%, rgb(var(--mesh-warm-3) / 0.28) 45%, rgb(var(--mesh-warm-3) / 0.10) 65%, rgb(var(--mesh-warm-3) / 0.02) 80%, transparent 92%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-3)) 0%, transparent 68%);
   animation:drift-4 38s var(--kd-ease) infinite alternate;
 }
 .blob-5{
-  width:88vw; height:88vw;
+  width:56vw; height:56vw;
   bottom:6vh; left:8vw;
-  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-deep-rgb) / 0.75) 0%, rgb(var(--kd-accent-deep-rgb) / 0.52) 24%, rgb(var(--kd-accent-deep-rgb) / 0.28) 45%, rgb(var(--kd-accent-deep-rgb) / 0.10) 65%, rgb(var(--kd-accent-deep-rgb) / 0.02) 80%, transparent 92%);
+  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-deep-rgb)) 0%, transparent 70%);
   opacity:calc(var(--mesh-alpha) * 0.7);
   animation:drift-5 53s var(--kd-ease) infinite alternate;
 }
@@ -442,8 +437,10 @@ body.is-complete .dial-target{stroke:var(--kd-accent);}
   stroke:var(--kd-accent);
   stroke-width:9;
   stroke-linecap:round;
-  filter:blur(9px);
-  opacity:calc(var(--kd-glow) * 0.71);
+  /* Widened stroke instead of a CSS blur: same halo, and it survives
+     WKWebView, which quietly ignores filters on SVG children. */
+  stroke-width:16;
+  opacity:calc(var(--kd-glow) * 0.30);
   transition:stroke-dashoffset 0.75s var(--kd-ease),opacity var(--kd-t-move) var(--kd-ease);
 }
 .dial-face{
@@ -579,33 +576,57 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
   box-shadow:inset 0 1px 0 var(--glass-edge);
 }
 
-/* Scrolls, because it now runs past today into the days ahead. The
-   grid is gone — fixed-width cells are what let it centre on today. */
-.tally-row{
-  display:flex;
-  align-items:flex-end;
-  gap:4px;
-  height:40px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  scroll-behavior:smooth;
-  scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;
-  /* Trailing room so today can actually reach the middle. Without it
-     the strip runs out of content to the right and today parks a few
-     dozen pixels short of centre. */
-  padding:0 42vw 2px 0;
+/* ---------- week ----------
+   Seven named columns. No scrolling, no axis to read — the shape of a
+   week is already in your head, so the view just has to fill it in. */
+.week-row{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:6px;
+  align-items:end;
 }
-.tally-row::-webkit-scrollbar{display:none;}
-.tally-row .tally{flex:0 0 9px;}
-/* Days that haven't happened — outlined, not filled. Not a failure,
-   just not yet. */
-.tally.ahead{
-  background:transparent;
-  border:1px solid var(--kd-line);
-  opacity:0.55;
+.week-cell{display:grid;justify-items:center;gap:0.4rem;grid-template-rows:auto 44px auto;}
+.week-name{
+  font-size:var(--kd-fs-tag);
+  font-weight:600;
+  letter-spacing:0.06em;
+  color:var(--kd-muted);
 }
-.tally-axis span:nth-child(2){color:var(--kd-accent);}
+.week-date{font-size:var(--kd-fs-tag);color:var(--kd-muted);font-variant-numeric:tabular-nums;}
+.week-row .tally{width:100%;align-self:end;border-radius:5px;}
+
+/* ---------- month ----------
+   A calendar, because a month has dates and people look for them. */
+.month-head{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:5px;
+  margin-bottom:0.5rem;
+}
+.month-head span{
+  text-align:center;
+  font-size:var(--kd-fs-tag);
+  font-weight:600;
+  color:var(--kd-muted);
+}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.mcell{
+  aspect-ratio:1;
+  height:auto !important;
+  border-radius:8px;
+  display:grid;
+  place-items:center;
+  font-size:0.7rem;
+  font-variant-numeric:tabular-nums;
+  color:var(--kd-muted);
+  background:var(--kd-surface-2);
+}
+.mcell.void{background:transparent;}
+.mcell.full{background:var(--kd-accent);color:var(--kd-on-accent);}
+.mcell.partial{background:rgb(var(--kd-accent-rgb) / 0.38);color:var(--kd-text);}
+.mcell.ahead{background:transparent;border:1px solid var(--kd-line);opacity:0.6;}
+.mcell.today{box-shadow:0 0 0 2px var(--kd-bg),0 0 0 3.5px var(--kd-accent);}
+.mcell.grace{background:transparent;border:1.5px dashed rgb(var(--kd-accent-rgb) / 0.65);}
 /* Which way time runs. Cheap to add, and it stops the flipped order
    from being a puzzle. */
 .tally-axis{
@@ -712,15 +733,14 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 }
 .g .seg.on{
   stroke:var(--kd-accent);
-  filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / var(--kd-glow)));
 }
 /* Animates opacity and glow rather than stroke-width, so the variants
    keep their own weights (rings 2.4, clock 8) while it plays. */
 .g .seg.pop{animation:seg-pop 0.5s var(--kd-ease);}
 @keyframes seg-pop{
   0%{opacity:0.3;filter:none;}
-  35%{opacity:1;filter:drop-shadow(0 0 11px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 1.4)));}
-  100%{opacity:1;filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / var(--kd-glow)));}
+  35%{opacity:1;}
+  100%{opacity:1;}
 }
 
 /* needle: the part that reads as a real instrument */
@@ -757,7 +777,7 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 
 /* completing a section locks the instrument — it should be obvious
    from across the room which sections are shut */
-.g.full .seg.on{filter:drop-shadow(0 0 9px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 1.35)));}
+.g.full .seg.on{stroke-width:6;}
 .g-rings.full .core{fill:var(--kd-accent);}
 .g.full .needle line{stroke:var(--kd-accent);}
 .g.full .hub{fill:var(--kd-accent);}

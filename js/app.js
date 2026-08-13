@@ -659,6 +659,22 @@ function arcPath(r, a0, a1){
 
 const ARC_SWEEP = 260, ARC_FROM = -130;
 
+/* The bloom is an SVG filter now, not a CSS one.
+
+   `filter: drop-shadow()` set on individual SVG child elements is not
+   reliably honoured by iOS WKWebView — it renders on desktop and
+   silently does nothing on the phone, which is exactly what was
+   reported. An feGaussianBlur + feMerge defined inside the SVG is
+   SVG-native and renders everywhere, so the glow is applied once to
+   the group of segments rather than per path. */
+function glowDefs(uid){
+  return `<defs><filter id="glow-${uid}" x="-60%" y="-60%" width="220%" height="220%"
+      filterUnits="objectBoundingBox">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter></defs>`;
+}
+
 function buildGauge(type, n, uid){
   const seg = (from, sweep, gap, r) => {
     /* An arc whose start and end land on the same point draws nothing,
@@ -675,12 +691,13 @@ function buildGauge(type, n, uid){
     const rings = Array.from({ length: n }, (_, i) =>
       `<circle class="seg" data-i="${i}" cx="${GC}" cy="${GC}" r="${26 - i * (18 / Math.max(n, 1))}"/>`).join('');
     return `<svg class="g g-rings" viewBox="0 0 ${G} ${G}" aria-hidden="true">
-      ${rings}<circle class="core" cx="${GC}" cy="${GC}" r="2.6"/></svg>`;
+      ${glowDefs(uid)}<g filter="url(#glow-${uid})">${rings}</g>
+      <circle class="core" cx="${GC}" cy="${GC}" r="2.6"/></svg>`;
   }
 
   if(type === 'clock'){
     return `<svg class="g g-clock" viewBox="0 0 ${G} ${G}" aria-hidden="true">
-      ${seg(0, 360, 5, 22)}</svg>`;
+      ${glowDefs(uid)}<g filter="url(#glow-${uid})">${seg(0, 360, 5, 22)}</g></svg>`;
   }
 
   // A level meter — ten rungs filling bottom-up. The radial forms get
@@ -691,7 +708,8 @@ function buildGauge(type, n, uid){
       const y = n > 1 ? GC + span / 2 - (span / (n - 1)) * i : GC;
       return `<line class="seg" data-i="${i}" x1="${GC - half}" y1="${y.toFixed(2)}" x2="${GC + half}" y2="${y.toFixed(2)}"/>`;
     }).join('');
-    return `<svg class="g g-ladder" viewBox="0 0 ${G} ${G}" aria-hidden="true">${rungs}</svg>`;
+    return `<svg class="g g-ladder" viewBox="0 0 ${G} ${G}" aria-hidden="true">
+      ${glowDefs(uid)}<g filter="url(#glow-${uid})">${rungs}</g></svg>`;
   }
 
   if(type === 'heat'){
@@ -714,7 +732,7 @@ function buildGauge(type, n, uid){
   }
 
   return `<svg class="g g-arc" viewBox="0 0 ${G} ${G}" aria-hidden="true">
-    ${seg(ARC_FROM, ARC_SWEEP, 6, 24)}
+    ${glowDefs(uid)}<g filter="url(#glow-${uid})">${seg(ARC_FROM, ARC_SWEEP, 6, 24)}</g>
     <g class="needle"><line x1="${GC}" y1="${GC}" x2="${GC}" y2="${GC - 17}"/></g>
     <circle class="hub" cx="${GC}" cy="${GC}" r="2.6"/></svg>`;
 }
@@ -804,7 +822,11 @@ function dialDate(){
    ============================================================ */
 const el = {};
 let ledgerView = (() => {
-  try{ return localStorage.getItem('kd-fit:view') || '28'; }catch(e){ return '28'; }
+  try{
+    const v = localStorage.getItem('kd-fit:view');
+    // '28' was the old default; anything unrecognised lands on the week
+    return ['week', 'month', 'year'].includes(v) ? v : 'week';
+  }catch(e){ return 'week'; }
 })();
 
 function build(){
@@ -909,7 +931,8 @@ function build(){
       <div class="ledger-head">
         <div class="label" data-ledger-label></div>
         <div class="seg">
-          <button type="button" data-view="28">28 days</button>
+          <button type="button" data-view="week">Week</button>
+          <button type="button" data-view="month">Month</button>
           <button type="button" data-view="year">Year</button>
         </div>
       </div>
@@ -1156,7 +1179,8 @@ function buildLedger(){
     b.classList.toggle('is-active', b.dataset.view === ledgerView));
 
   if(ledgerView === 'year') buildYear();
-  else buildTally();
+  else if(ledgerView === 'month') buildMonth();
+  else buildWeek();
 }
 
 /* Every drawn day is a way into that day. The ledger was previously
@@ -1168,63 +1192,83 @@ function wireLedgerCells(){
   });
 }
 
-function buildTally(){
-  /* A timeline, not a chart. Today sits in the middle with finished
-     days behind it and the days ahead in front — which is how a week
-     is actually pictured. Both earlier orderings were wrong for the
-     same reason: they treated the run as a chart with an axis, so
-     "now" ended up pinned to one edge with nothing on the other side
-     of it.
+/* Week, month, year — the three spans people actually think in. A
+   rolling 28-day window was a number nobody has a feel for, and the
+   timeline that replaced it solved the ordering problem by inventing a
+   scroll nobody asked for. A week has named days; a month has dates;
+   a year has shape. Each is a fixed frame with today marked inside it,
+   so "where am I" is answered by position rather than by scrolling. */
+function dayCellMarkup(d, tKey, grace, todayTime, extraClass){
+  const future = d.date.getTime() > todayTime;
+  const ratio = d.total ? Math.min(d.done / d.total, 1) : 0;
+  const cls = ['tally'];
+  if(extraClass) cls.push(extraClass);
+  if(future) cls.push('ahead');
+  else {
+    if(d.key === tKey) cls.push('today');
+    if(isGoodDay(d)) cls.push('full');
+    else if(d.done > 0) cls.push('partial');
+    if(grace.has(d.key)) cls.push('grace');
+  }
+  const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+  const title = future ? `${label} — not yet`
+    : `${label} — ${d.done}/${d.total}${grace.has(d.key) ? ' · streak carried' : ''}`;
+  return { cls: cls.join(' '), title, ratio, future };
+}
 
-     Days ahead are drawn as empty outlines. They are not failures, they
-     just haven't happened, and they give the strip somewhere to run to. */
-  const AHEAD = 7;
-  const back = HISTORY_DAYS - 1;
-  const days = historyFrom(addDays(midnight(new Date()), -back), HISTORY_DAYS + AHEAD);
+function buildWeek(){
+  const start = weekStart();
+  const days = historyFrom(start, 7);
   const { grace } = streakInfo(recentHistory());
   const tKey = dayKey();
   const todayTime = midnight(new Date()).getTime();
+  const done = days.filter(isGoodDay).length;
 
-  el.ledgerLabel.textContent = 'Your run';
-  el.ledgerBody.innerHTML = `<div class="tally-row" data-tally>${
-    days.map((d, i) => {
-      const future = d.date.getTime() > todayTime;
-      const ratio = d.total ? Math.min(d.done / d.total, 1) : 0;
-      const cls = ['tally'];
-      if(future) cls.push('ahead');
-      else {
-        if(d.key === tKey) cls.push('today');
-        if(isGoodDay(d)) cls.push('full');
-        else if(d.done > 0) cls.push('partial');
-        if(grace.has(d.key)) cls.push('grace');
-      }
-      const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-      const title = future ? `${label} — not yet`
-        : `${label} — ${d.done}/${d.total}${grace.has(d.key) ? ' · streak carried' : ''}`;
-      const height = future ? 26 : 38 + ratio * 62;
-      return `<div class="${cls.join(' ')}" data-day="${future ? '' : d.key}"
-        style="height:${height}%;${REDUCED_MOTION ? '' : `animation:kd-tally-in 0.5s var(--kd-ease) ${320 + i * 12}ms both`}"
-        title="${title}"></div>`;
-    }).join('')
-  }</div>
-  <div class="tally-axis">
-    <span>28 days back</span>
-    <span data-tally-today>Today</span>
-    <span>Ahead</span>
-  </div>`;
+  el.ledgerLabel.textContent = 'This week';
+  el.ledgerBody.innerHTML = `
+    <div class="week-row" data-tally>
+      ${days.map((d, i) => {
+        const c = dayCellMarkup(d, tKey, grace, todayTime);
+        return `<div class="week-cell">
+          <div class="week-name">${DAY_NAMES[d.date.getDay()]}</div>
+          <div class="${c.cls}" data-day="${c.future ? '' : d.key}"
+               style="height:${c.future ? 26 : 38 + c.ratio * 62}%;${
+                 REDUCED_MOTION ? '' : `animation:kd-tally-in 0.5s var(--kd-ease) ${300 + i * 45}ms both`}"
+               title="${c.title}"></div>
+          <div class="week-date">${d.date.getDate()}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="tally-axis"><span>${done} of 7 closed</span><span>Mon — Sun</span></div>`;
   el.tally = document.querySelector('[data-tally]');
+  wireLedgerCells();
+}
 
-  /* Land on today rather than on either end. Deferred a frame: at this
-     point the row has just been written into the DOM and has no layout
-     yet, so offsetLeft and clientWidth are both zero. `auto` avoids
-     animating the initial placement. */
-  const row = el.tally;
-  if(row) requestAnimationFrame(() => {
-    const cell = row.querySelector(`[data-day="${tKey}"]`);
-    if(!cell) return;
-    const to = cell.offsetLeft - row.clientWidth / 2 + cell.offsetWidth / 2;
-    row.scrollTo({ left: Math.max(0, to), behavior: 'auto' });
-  });
+function buildMonth(){
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const length = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const days = historyFrom(first, length);
+  const { grace } = streakInfo(recentHistory());
+  const tKey = dayKey();
+  const todayTime = midnight(now).getTime();
+  // Monday-first offset so the grid lines up under the day names.
+  const lead = (first.getDay() + 6) % 7;
+  const done = days.filter(d => d.date.getTime() <= todayTime && isGoodDay(d)).length;
+
+  el.ledgerLabel.textContent = now.toLocaleDateString('en-GB', { month:'long' });
+  el.ledgerBody.innerHTML = `
+    <div class="month-head">${[1,2,3,4,5,6,0].map(d => `<span>${DAY_NAMES[d]}</span>`).join('')}</div>
+    <div class="month-grid" data-tally>
+      ${Array.from({ length: lead }, () => '<div class="mcell void"></div>').join('')}
+      ${days.map(d => {
+        const c = dayCellMarkup(d, tKey, grace, todayTime, 'mcell');
+        return `<div class="${c.cls}" data-day="${c.future ? '' : d.key}" title="${c.title}">
+          <span>${d.date.getDate()}</span></div>`;
+      }).join('')}
+    </div>
+    <div class="tally-axis"><span>${done} closed so far</span><span>${length} days</span></div>`;
+  el.tally = null;
   wireLedgerCells();
 }
 
