@@ -11,6 +11,7 @@
     "android": "npm run sync && cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.8",
     "@capacitor/app": "^7.0.0",
     "@capacitor/core": "^7.0.0",
     "@capacitor/haptics": "^7.0.0",

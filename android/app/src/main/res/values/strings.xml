@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Jotara</string>
+    <string name="title_activity_main">Jotara</string>
+    <string name="package_name">ie.kieranduffy.kdfit</string>
+    <string name="custom_url_scheme">ie.kieranduffy.kdfit</string>
+</resources>

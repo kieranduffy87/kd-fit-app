@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The adaptive icon's background plate. Android crops the plate to
+         whatever mask the launcher uses, so it must be a flat colour or a
+         full-bleed drawable — the mesh lives in the legacy icon instead. -->
+    <color name="ic_launcher_background">#2C1F28</color>
+</resources>

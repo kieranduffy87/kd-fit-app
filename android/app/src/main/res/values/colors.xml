@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Native chrome, matched to the web layer's dusk palette so the
+         status bar and the splash don't flash a different colour than
+         the app they are wrapping. -->
+    <color name="colorPrimary">#241A22</color>
+    <color name="colorPrimaryDark">#241A22</color>
+    <color name="colorAccent">#F4785C</color>
+    <color name="splashBackground">#241A22</color>
+</resources>
