@@ -154,7 +154,10 @@ const HISTORY_DAYS = 28;
 const YEAR_WEEKS = 53;
 const GOOD_DAY = 0.7;
 
-const KD_MARK = `<svg viewBox="0 0 18.62 11.73" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon fill="var(--kd-accent)" points="18.62 0 12 0 6 5.86 12 11.73 18.62 11.73 12.62 5.86 18.62 0"/><polygon fill="var(--kd-text)" points="0 0 0 11.72 6 5.86 0 0"/></svg>`;
+/* The Jotara mark (icons/jot.svg), inlined so it can take its colour
+   from whatever it sits in — the supplied file hardcodes #231f20,
+   which would vanish against the dark theme. */
+const KD_MARK = `<svg viewBox="0 0 68.02 102.03" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="currentColor"><path d="M34,34.01C34,52.79,18.79,68.02,0,68.02v34.01c37.56,0,68.01-30.46,68.01-68.02h-34.01Z"/><rect width="34.01" height="34.01"/></svg>`;
 const ICON_COG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
 
 const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
@@ -1045,9 +1048,17 @@ function sync(){
   });
 
   // In progress mode the dial's big number is today's count, so it has
-  // to move on every tick rather than only at boot.
+  // to move on every tick rather than only at boot. Re-trigger the bump
+  // only when the value actually changed — restarting the animation on
+  // every sync would make the number twitch at rest.
   if(!countdownMode() && el.days){
-    el.days.textContent = done;
+    const next = String(done);
+    if(el.days.textContent !== next){
+      el.days.textContent = next;
+      el.days.classList.remove('bumped');
+      void el.days.offsetWidth;          // reflow, so the animation restarts
+      el.days.classList.add('bumped');
+    }
     if(el.dialUnit) el.dialUnit.innerHTML = dialUnit();
   }
 

@@ -37,16 +37,17 @@
 
   /* dark is the default, so it lives on the bare :root — a page with
      no data-theme still paints correctly before any script runs */
-  --kd-bg:#08090b;
+  --kd-bg:#0b0809;   /* warm black */
+  --kd-glass:62%;    /* how solid a card sits over the mesh */
   --kd-text:#eceef2;
   --kd-text-rgb:236 238 242;
-  --kd-muted:#8f939d;
+  --kd-muted:#9a9088;
   --kd-line:rgb(var(--kd-text-rgb) / 0.13);
-  --kd-surface:#101216;
-  --kd-surface-2:#16181d;
+  --kd-surface:#15100f;
+  --kd-surface-2:#1d1715;
   --kd-instrument:var(--kd-paper-white);
   --kd-on-accent:#fff;
-  --kd-sky:#0a0f22;
+  --kd-sky:#150f11;   /* warm near-black, not navy — the mesh supplies the colour */
   --kd-shadow:none;
   /* The unlit state of every instrument — gauge segments, the dial
      track, empty tally bars. On glass a whisper of the text colour is
@@ -91,19 +92,20 @@
   /* The page is a shade deeper than the cards, not the same white, so
      a card is an object sitting on a surface rather than an outline
      drawn on the void. That separation is what light mode was missing. */
-  --kd-bg:#eceef3;
+  --kd-bg:#f6f1ed;   /* warm paper */
+  --kd-glass:72%;
   --kd-text:#14161b;
   --kd-text-rgb:20 22 27;
-  --kd-muted:#565a63;
+  --kd-muted:#6a6058;
   --kd-line:rgb(var(--kd-text-rgb) / 0.14);
   --kd-surface:#ffffff;
   /* Well clear of the background — this is the empty state of every
      bar and gauge, and at 2% away it read as nothing at all. */
-  --kd-surface-2:#dbdfe7;
+  --kd-surface-2:#e4ddd6;
   --kd-track:rgb(var(--kd-text-rgb) / 0.16);
   --kd-glow:0.18;
   --kd-instrument:#2a2d34;
-  --kd-sky:#dfe6fa;
+  --kd-sky:#fbf0e8;   /* warm paper */
   --kd-shadow:0 1px 2px rgb(var(--kd-text-rgb) / 0.06),0 10px 28px rgb(var(--kd-text-rgb) / 0.08);
   --kd-wash-1:0.07;
   --kd-wash-2:0.05;
@@ -179,19 +181,99 @@ body{
 }
 ::selection{background:var(--kd-accent);color:var(--kd-on-accent);}
 
-/* ---------- ambient art ---------- */
+/* ============================================================
+   The mesh
+
+   Five heavily-blurred blobs, each on its own long drift, over a base
+   wash. Two of the five are always warm — peach and rose — regardless
+   of the chosen accent, which is what keeps every theme in the same
+   family instead of turning the green accent into a cold screen. The
+   accent supplies the other two, so your choice still leads.
+
+   Blur is the whole effect: at 90px nothing reads as a circle, it
+   reads as light. Everything animates on transform only, so it runs
+   on the compositor and never triggers layout.
+   ============================================================ */
+:root{
+  --mesh-warm-1:255 154 108;   /* peach   */
+  --mesh-warm-2:244 114 152;   /* rose    */
+  --mesh-warm-3:255 199 122;   /* gold    */
+  --mesh-alpha:0.55;
+  --mesh-blur:76px;
+  /* Screen on a dark ground makes the blobs behave like coloured
+     light rather than paint — overlaps get brighter instead of
+     muddier, which is exactly what a five-colour mesh needs. */
+  --mesh-blend:screen;
+}
+:root[data-theme="light"]{
+  /* On paper the same alphas turn to poster paint — light needs about
+     half the strength and a slightly wider blur to stay atmospheric. */
+  /* On paper the same blobs must behave like pigment, not light —
+     multiply keeps the overlaps rich instead of blowing them out. */
+  --mesh-alpha:0.62;
+  --mesh-blur:88px;
+  --mesh-blend:multiply;
+}
+
 .ambient{
   position:fixed;
   inset:0;
   z-index:0;
   pointer-events:none;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -8%, rgb(var(--kd-accent-rgb) / var(--kd-wash-1)), transparent 62%),
-    radial-gradient(ellipse 60% 40% at 88% 12%, rgb(var(--kd-accent-deep-rgb) / var(--kd-wash-2)), transparent 70%),
-    radial-gradient(ellipse 90% 55% at 10% 104%, rgb(var(--kd-accent-rgb) / var(--kd-wash-3)), transparent 68%),
-    linear-gradient(180deg,var(--kd-sky) 0%,var(--kd-bg) 46%);
+  overflow:hidden;
+  background:linear-gradient(175deg,var(--kd-sky) 0%,var(--kd-bg) 58%);
   transition:opacity 1.2s var(--kd-ease);
 }
+.blob{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(var(--mesh-blur));
+  opacity:var(--mesh-alpha);
+  mix-blend-mode:var(--mesh-blend);
+  will-change:transform;
+}
+.blob-1{
+  width:78vw; height:78vw;
+  top:-24vw; left:-18vw;
+  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-rgb)) 0%, transparent 68%);
+  animation:drift-1 34s var(--kd-ease) infinite alternate;
+}
+.blob-2{
+  width:66vw; height:66vw;
+  top:-8vw; right:-20vw;
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-1)) 0%, transparent 68%);
+  animation:drift-2 41s var(--kd-ease) infinite alternate;
+}
+.blob-3{
+  width:84vw; height:84vw;
+  top:32vh; left:-30vw;
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-2)) 0%, transparent 66%);
+  animation:drift-3 47s var(--kd-ease) infinite alternate;
+}
+.blob-4{
+  width:70vw; height:70vw;
+  bottom:-22vw; right:-14vw;
+  background:radial-gradient(circle at 50% 50%, rgb(var(--mesh-warm-3)) 0%, transparent 68%);
+  animation:drift-4 38s var(--kd-ease) infinite alternate;
+}
+.blob-5{
+  width:56vw; height:56vw;
+  bottom:6vh; left:8vw;
+  background:radial-gradient(circle at 50% 50%, rgb(var(--kd-accent-deep-rgb)) 0%, transparent 70%);
+  opacity:calc(var(--mesh-alpha) * 0.7);
+  animation:drift-5 53s var(--kd-ease) infinite alternate;
+}
+
+/* Long, prime-ish durations so the five never resynchronise into an
+   obvious loop. */
+@keyframes drift-1{ to{ transform:translate3d(14vw,10vh,0) scale(1.18); } }
+@keyframes drift-2{ to{ transform:translate3d(-16vw,14vh,0) scale(1.12); } }
+@keyframes drift-3{ to{ transform:translate3d(18vw,-12vh,0) scale(0.88); } }
+@keyframes drift-4{ to{ transform:translate3d(-12vw,-16vh,0) scale(1.22); } }
+@keyframes drift-5{ to{ transform:translate3d(10vw,-8vh,0) scale(1.3); } }
+
+/* Grain over the whole mesh — it stops the blur banding on wide gamut
+   screens, which is exactly where a five-colour mesh shows seams. */
 .ambient::after{
   content:'';
   position:absolute;
@@ -200,7 +282,9 @@ body{
   mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-body.is-complete .ambient{opacity:1.35;}
+/* Closing the day warms and lifts the whole mesh. */
+body.is-complete .ambient{opacity:1.25;}
+body.is-complete .blob{animation-duration:22s;}
 
 /* ---------- type ---------- */
 .label{
@@ -222,7 +306,7 @@ body.is-complete .ambient{opacity:1.35;}
   margin-bottom:2.5rem;
 }
 .brand{display:flex;align-items:center;gap:0.7rem;min-width:0;}
-.brand svg{width:22px;height:auto;display:block;flex:none;}
+.brand svg{height:21px;width:auto;display:block;flex:none;color:var(--kd-accent);}
 .brand .label{color:var(--kd-text);}
 .masthead-right{display:flex;align-items:center;gap:0.6rem;}
 .icon-btn{
@@ -444,13 +528,15 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 
 /* ---------- cards ---------- */
 .card{
-  background:
-    linear-gradient(180deg,rgb(var(--kd-text-rgb) / 0.028),transparent 45%),
-    var(--kd-surface);
+  /* Glass, not a solid panel. An opaque card over a mesh throws the
+     whole effect away — the point is that the light moves underneath. */
+  background:color-mix(in srgb, var(--kd-surface) var(--kd-glass), transparent);
+  -webkit-backdrop-filter:blur(26px) saturate(1.5);
+  backdrop-filter:blur(26px) saturate(1.5);
   border:1px solid var(--kd-line);
   border-radius:var(--kd-radius);
   box-shadow:var(--kd-shadow);
-  padding:1.35rem 1.35rem 0.5rem;
+  padding:1.5rem 1.5rem 0.65rem;
   margin-bottom:1rem;
   overflow:hidden;
 }
@@ -879,7 +965,7 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
   border-top:1px solid var(--kd-line);
 }
 .footer .label{letter-spacing:0.16em;}
-.footer svg{width:16px;height:auto;margin-bottom:0.85rem;opacity:0.55;}
+.footer svg{height:20px;width:auto;margin:0 auto 0.85rem;display:block;opacity:0.5;color:var(--kd-muted);}
 
 :focus-visible{outline:3px solid var(--kd-accent);outline-offset:3px;border-radius:6px;}
 
@@ -1071,6 +1157,48 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
 .rise{animation:kd-rise var(--kd-t-reveal) var(--kd-ease) both;}
 @keyframes kd-tally-in{from{height:0;opacity:0;}}
 
+/* ============================================================
+   Motion
+
+   Three additions, all tied to something the user did — nothing here
+   animates on its own except the mesh. Ambient motion you didn't cause
+   is decoration; motion that answers a tap is feedback.
+   ============================================================ */
+
+/* A row gives under the finger and comes back. */
+.item,.train{
+  transition:transform 0.18s var(--kd-ease),color var(--kd-t-fast) ease;
+  transform-origin:left center;
+}
+.item:active,.train:active{transform:scale(0.985);}
+
+/* Ticking sends one ring of accent out from the box and fades it. The
+   ripple lives on a pseudo-element so it can't affect layout. */
+.item .box,.train .box{position:relative;}
+.item.just-done .box::after,
+.train.just-done .box::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  border:2px solid var(--kd-accent);
+  animation:kd-ripple 0.62s var(--kd-ease) forwards;
+  pointer-events:none;
+}
+@keyframes kd-ripple{
+  from{ transform:scale(1); opacity:0.85; }
+  to{ transform:scale(2.1); opacity:0; }
+}
+
+/* The dial's number lifts and settles whenever the count changes, so
+   the headline figure acknowledges the tap rather than snapping. */
+.dial-num.bumped{animation:kd-bump 0.5s var(--kd-ease);}
+@keyframes kd-bump{
+  0%{ transform:translateY(0.22em) scale(0.94); opacity:0; filter:blur(5px); }
+  60%{ opacity:1; filter:blur(0); }
+  100%{ transform:none; opacity:1; }
+}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
     animation-duration:0.01ms !important;
@@ -1078,6 +1206,9 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
     transition-duration:0.01ms !important;
   }
   .rise{animation:none;opacity:1;transform:none;filter:none;}
+  /* Freeze the mesh where it starts — still a mesh, just a still one. */
+  .blob{animation:none !important;}
+  .item:active,.train:active{transform:none;}
 }
 
 /* ============================================================
