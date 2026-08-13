@@ -97,7 +97,7 @@
   /* Portrait mark — sized by height, not width. */
   #splash .splash-mark{
     position:relative;
-    height:78px;
+    height:92px;
     opacity:0;
     transform:translateY(1.25rem);
     filter:blur(8px);
@@ -191,10 +191,7 @@
      you rather than wait up there to be scrolled to. -->
 <div class="celebrate" id="celebrate" hidden aria-hidden="true">
   <div class="celebrate-pane">
-    <svg class="celebrate-mark" viewBox="0 0 120 120" aria-hidden="true">
-      <circle class="cel-ring" cx="60" cy="60" r="46"/>
-      <path class="cel-check" d="M38 61 L54 77 L84 43"/>
-    </svg>
+    <svg class="celebrate-mark" viewBox="0 0 120 120" aria-hidden="true" data-cel-mark></svg>
     <div class="celebrate-title" data-cel-title>Day complete</div>
     <div class="celebrate-sub" data-cel-sub></div>
   </div>

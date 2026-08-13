@@ -566,10 +566,35 @@ function checkMark(){
    accent, used here because the meaning needs a second hue — it is the
    only non-blue in the app.
    ============================================================ */
-const GAUGE_BY_SECTION = {
-  body: 'arc', mind: 'rings', soul: 'clock', inflammation: 'heat', health: 'ladder'
-};
-function gaugeType(id){ return GAUGE_BY_SECTION[id] || 'arc'; }
+/* 'heat' is deliberately not in here. It runs coral-to-blue because it
+   was built for Inflammation, where less is better — handing it to an
+   ordinary progress card showed a full hot arc at 0/1, which reads as
+   the exact opposite of the truth. It stays available, but only to a
+   section that actually means it. */
+const GAUGE_TYPES = ['arc', 'rings', 'clock', 'ladder'];
+const INVERSE_SECTIONS = { inflammation: 'heat' };
+
+/* Instruments are handed out in order down the page — daily sections
+   first, then the weekly and monthly cards — so no two cards you can
+   see at once share a mechanism. A hash of the section id was the first
+   attempt and collided badly; three of six sections came out identical.
+
+   The original five sections were body, mind, soul, inflammation,
+   health in that order, which lands on exactly the arc / rings / clock
+   / heat / ladder they were designed with, so nothing moves for an
+   existing config. */
+function gaugeAssignment(){
+  const map = {};
+  let i = 0;
+  config.daily.forEach(sec => {
+    map[sec.id] = INVERSE_SECTIONS[sec.id] || GAUGE_TYPES[i++ % GAUGE_TYPES.length];
+  });
+  map['@weekly']  = GAUGE_TYPES[i++ % GAUGE_TYPES.length];
+  map['@monthly'] = GAUGE_TYPES[i++ % GAUGE_TYPES.length];
+  return map;
+}
+let GAUGES = {};
+function gaugeType(id){ return GAUGES[id] || 'arc'; }
 
 const G = 68, GC = G / 2;
 
@@ -588,7 +613,10 @@ const ARC_SWEEP = 260, ARC_FROM = -130;
 
 function buildGauge(type, n, uid){
   const seg = (from, sweep, gap, r) => {
-    const each = (sweep - gap * (n - 1)) / n;
+    /* An arc whose start and end land on the same point draws nothing,
+       so a one-segment clock (a monthly target of 1) rendered an empty
+       gauge. Clamp just short of a full turn. */
+    const each = Math.min((sweep - gap * (n - 1)) / n, 359.4);
     return Array.from({ length: n }, (_, i) => {
       const a0 = from + i * (each + gap);
       return `<path class="seg" data-i="${i}" d="${arcPath(r, a0, a0 + each)}"/>`;
@@ -733,6 +761,7 @@ let ledgerView = (() => {
 
 function build(){
   const now = new Date();
+  GAUGES = gaugeAssignment();
 
   /* Only today's habits are rendered. A Tuesday habit on a Thursday
      isn't greyed out, it's simply not today's business — and because
@@ -778,7 +807,7 @@ function build(){
     <header class="masthead rise">
       <div class="brand">
         ${KD_MARK}
-        <div class="label">Jotara</div>
+        <span class="visually-hidden">Jotara</span>
       </div>
       <div class="masthead-right">
         <div class="label" data-today-date></div>
@@ -849,7 +878,7 @@ function build(){
           <div class="card-count" data-week-count><b>0</b>/0 this week</div>
         </div>
         <div class="gauge" data-week-gauge>${
-          buildGauge('arc', config.training.reduce((n, t) => n + t.target, 0) || 1, 'train')
+          buildGauge(gaugeType('@weekly'), config.training.reduce((n, t) => n + t.target, 0) || 1, 'train')
         }</div>
       </div>
       ${periodRows(config.training, 'this week')}
@@ -863,7 +892,7 @@ function build(){
           <div class="card-count" data-month-count><b>0</b>/0 this month</div>
         </div>
         <div class="gauge" data-month-gauge>${
-          buildGauge('clock', config.monthly.reduce((n, t) => n + t.target, 0) || 1, 'month')
+          buildGauge(gaugeType('@monthly'), config.monthly.reduce((n, t) => n + t.target, 0) || 1, 'month')
         }</div>
       </div>
       ${periodRows(config.monthly, 'this month')}
@@ -1070,12 +1099,12 @@ function sync(){
   if(el.weekCount){
     const prog = trainingProgress(week);
     el.weekCount.innerHTML = `<b>${prog.hit}</b>/${prog.target} this week`;
-    syncGauge(el.weekGauge, 'arc', prog.hit, prog.target);
+    syncGauge(el.weekGauge, gaugeType('@weekly'), prog.hit, prog.target);
   }
   if(el.monthCount){
     const prog = monthlyProgress(month);
     el.monthCount.innerHTML = `<b>${prog.hit}</b>/${prog.target} this month`;
-    syncGauge(el.monthGauge, 'clock', prog.hit, prog.target);
+    syncGauge(el.monthGauge, gaugeType('@monthly'), prog.hit, prog.target);
   }
 
   el.trains.forEach(node => {
@@ -1213,6 +1242,41 @@ function toggle(node){
    never on a re-render — a reward that replays itself stops being one. */
 let celTimer = null;
 
+/* The completion mark is built from the day, not from a generic tick.
+   One segment per habit you actually closed, lit in sequence around the
+   ring, then the count lands in the middle. It uses the same segmented-
+   arc language as the section gauges, so the reward looks like it came
+   from this app rather than from a component library — and it says
+   something: that is your five things, one at a time. */
+function celebrationMark(done, total){
+  const C = 60, R = 44;
+  const n = Math.max(1, Math.min(done, 24));
+  const gap = n === 1 ? 0 : Math.min(7, 120 / n);
+  const each = Math.min((360 - gap * n) / n, 359.4);
+
+  const pt = (r, deg) => {
+    const a = (deg - 90) * Math.PI / 180;
+    return [(C + r * Math.cos(a)).toFixed(2), (C + r * Math.sin(a)).toFixed(2)];
+  };
+  const arc = (r, a0, a1) => {
+    const [x0, y0] = pt(r, a0), [x1, y1] = pt(r, a1);
+    return `M${x0} ${y0} A${r} ${r} 0 ${Math.abs(a1 - a0) > 180 ? 1 : 0} 1 ${x1} ${y1}`;
+  };
+
+  const segs = Array.from({ length: n }, (_, i) => {
+    const a0 = -90 + i * (each + gap);
+    return `<path class="cel-seg" style="--i:${i}" d="${arc(R, a0, a0 + each)}"/>`;
+  }).join('');
+
+  // The faint full ring underneath is the shape of the whole day, so a
+  // completed-but-not-perfect day still reads as "not quite all of it".
+  return `
+    <circle class="cel-track" cx="${C}" cy="${C}" r="${R}"/>
+    ${segs}
+    <text class="cel-count" x="${C}" y="${C}" text-anchor="middle"
+          dominant-baseline="central" style="--n:${n}">${done}</text>`;
+}
+
 function celebrate(perfect){
   const host = document.getElementById('celebrate');
   if(!host) return;
@@ -1222,6 +1286,7 @@ function celebrate(perfect){
   const done = dailyDone(today);
   const total = dailyTotal();
 
+  host.querySelector('[data-cel-mark]').innerHTML = celebrationMark(done, total);
   host.querySelector('[data-cel-title]').textContent = perfect ? 'Perfect day' : 'Day complete';
   host.querySelector('[data-cel-sub]').textContent =
     `${done} of ${total}` + (streak > 1 ? ` · ${streak} day streak` : '');
