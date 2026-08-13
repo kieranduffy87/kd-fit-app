@@ -33,19 +33,42 @@
     return fallback;
   }
 
-  // The mark, in its own 18.62 x 11.73 space (see kd-design-system).
+  /* The Jotara mark, in its own 68.02 x 102.03 space (icons/jot.svg).
+
+     The curved half is a quarter annulus centred on (0, 34.01) — inner
+     radius 34.01, outer 68.02, sweeping from +x round to +y. The source
+     file draws it with two bezier curves; the extruder needs polygons,
+     so the arc is flattened into segments here. Sixteen is enough that
+     the silhouette reads as a curve at this size. */
+  const R_IN = 34.01, R_OUT = 68.02, ARC_CY = 34.01, ARC_SEGS = 16;
+
+  function annulus(){
+    const pts = [];
+    for(let i = 0; i <= ARC_SEGS; i++){          // outer edge, 0° → 90°
+      const t = (Math.PI / 2) * (i / ARC_SEGS);
+      pts.push([R_OUT * Math.cos(t), ARC_CY + R_OUT * Math.sin(t)]);
+    }
+    for(let i = ARC_SEGS; i >= 0; i--){          // inner edge, back again
+      const t = (Math.PI / 2) * (i / ARC_SEGS);
+      pts.push([R_IN * Math.cos(t), ARC_CY + R_IN * Math.sin(t)]);
+    }
+    return pts;
+  }
+
   function shapes(){
+    // One mark, one colour — but the square is given the accent and the
+    // sweep the text colour, so the solid still reads as two planes
+    // turning rather than a single silhouette.
     return [
-      { colour: readToken('--kd-accent', [0x03, 0x39, 0xf8]),
-        pts: [[18.62,0],[12,0],[6,5.86],[12,11.73],[18.62,11.73],[12.62,5.86]] },
+      { colour: readToken('--kd-accent', [0xd9, 0x77, 0x06]), pts: annulus() },
       { colour: readToken('--kd-text', [0xec, 0xee, 0xf2]),
-        pts: [[0,0],[0,11.72],[6,5.86]] }
+        pts: [[0,0],[34.01,0],[34.01,34.01],[0,34.01]] }
     ];
   }
 
-  const CX = 9.31, CY = 5.865;   // centre of the mark
-  const SCALE = 5.6;             // into viewBox units
-  const DEPTH = 13;              // extrusion, post-scale
+  const CX = 34.01, CY = 51.015;  // centre of the mark
+  const SCALE = 1.55;             // into viewBox units
+  const DEPTH = 22;               // extrusion, post-scale
   // A long lens: barely any perspective distortion, so the mark keeps
   // its proportions instead of ballooning toward the camera.
   const FOCAL = 430;
