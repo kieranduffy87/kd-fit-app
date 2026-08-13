@@ -174,8 +174,28 @@ function read(key, fallback){
   }catch(e){ return fallback; }
 }
 function write(key, value){
-  try{ localStorage.setItem(key, JSON.stringify(value)); return true; }
+  try{
+    const raw = JSON.stringify(value);
+    localStorage.setItem(key, raw);
+    mirror(key, raw);
+    return true;
+  }
   catch(e){ return false; } // private mode / quota — the session still works
+}
+
+/* Every write is echoed to the native vault, fire-and-forget. It is a
+   mirror of localStorage rather than a replacement: the app reads
+   synchronously everywhere, and rewriting that for an async store
+   would touch every function in this file for no gain. */
+function mirror(key, raw){
+  const n = window.KDNative;
+  if(!n || !n.vaultAvailable || !n.vaultAvailable()) return;
+  if(raw === null) n.vaultRemove(key);
+  else n.vaultSet(key, raw);
+}
+function unmirror(key){
+  const n = window.KDNative;
+  if(n && n.vaultAvailable && n.vaultAvailable()) n.vaultRemove(key);
 }
 
 /* ---------- config ---------- */
@@ -307,9 +327,10 @@ function getNote(key){
   catch(e){ return ''; }
 }
 function setNote(key, text){
+  const k = `kd-fit:note:${key}`;
   try{
-    if(text) localStorage.setItem(`kd-fit:note:${key}`, text);
-    else localStorage.removeItem(`kd-fit:note:${key}`);
+    if(text){ localStorage.setItem(k, text); mirror(k, text); }
+    else { localStorage.removeItem(k); unmirror(k); }
   }catch(e){ /* ignore */ }
 }
 
@@ -475,14 +496,36 @@ function recentHistory(){
   return historyFrom(addDays(midnight(new Date()), -(HISTORY_DAYS - 1)), HISTORY_DAYS);
 }
 
-// Yesterday backwards — today is still in play, so it can't break a run.
-function streakOf(days){
-  let s = 0;
+/* Yesterday backwards — today is still in play, so it can't break a run.
+
+   One missed day no longer ends a streak; two in a row does. Losing
+   weeks of work to a single bad Tuesday is the moment people delete a
+   habit app, and it punishes exactly the person the app is for. The
+   0.7 threshold already said a day needn't be perfect — this says the
+   same about a week.
+
+   A forgiven day is returned as well as counted, so the ledger can
+   mark it rather than quietly pretending it went well. */
+function streakInfo(days){
+  let streak = 0;
+  let pendingGrace = null;
+  const grace = new Set();
+
   for(let i = days.length - 2; i >= 0; i--){
-    if(isGoodDay(days[i])) s++; else break;
+    const d = days[i];
+    if(isGoodDay(d)){
+      streak++;
+      if(pendingGrace){ grace.add(pendingGrace); pendingGrace = null; }
+      continue;
+    }
+    // A second miss with no good day between them ends the run.
+    if(pendingGrace) break;
+    pendingGrace = d.key;
   }
-  return s;
+  // A miss still pending when the walk ends was never earned back.
+  return { streak, grace };
 }
+function streakOf(days){ return streakInfo(days).streak; }
 function bestRunOf(days){
   let best = 0, run = 0;
   days.forEach(d => {
@@ -955,6 +998,153 @@ function setDateLabel(){
     new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
 }
 
+/* ============================================================
+   The day editor
+
+   You log at night, or you forget entirely and remember on Wednesday
+   what you did on Monday. Until now there was no way to say so — the
+   ledger drew every day and none of them could be touched, which made
+   an honest record impossible and gave people a reason to give up.
+
+   Tapping any past cell opens that day with the habits that were
+   actually scheduled for it. `_total` is stamped from that date's own
+   schedule, so a Tuesday-only habit is neither demanded of a Thursday
+   nor lost from a Tuesday.
+   ============================================================ */
+let editingKey = null;
+
+function openDay(key){
+  if(!key) return;
+  const date = parseKey(key);
+  if(isNaN(date)) return;
+  // Tomorrow hasn't happened; there is nothing honest to record.
+  if(midnight(date) > midnight(new Date())) return;
+
+  editingKey = key;
+  const host = document.getElementById('dayedit');
+  host.hidden = false;
+  host.innerHTML = dayEditMarkup(key, date);
+  document.body.style.overflow = 'hidden';
+  wireDayEdit(host, key);
+  tap('light');
+}
+
+function closeDay(){
+  const host = document.getElementById('dayedit');
+  host.hidden = true;
+  host.innerHTML = '';
+  editingKey = null;
+  document.body.style.overflow = '';
+}
+
+function dayEditMarkup(key, date){
+  const entry = getDay(key);
+  const isToday = key === dayKey();
+  const scheduled = config.daily
+    .map(sec => ({ sec, items: sectionItemsOn(sec, date) }))
+    .filter(x => x.items.length);
+
+  const rows = scheduled.map(({ sec, items }) => `
+    <div class="de-group">
+      <div class="label">${escapeHtml(sec.title)}</div>
+      ${items.map(it => `
+        <div class="item de-item${entry[it.id] ? ' done' : ''}" data-de-id="${it.id}"
+             role="checkbox" aria-checked="${!!entry[it.id]}" tabindex="0">
+          <div class="box">${checkMark()}</div>
+          <div class="item-label">${escapeHtml(it.label)}</div>
+        </div>`).join('')}
+    </div>`).join('');
+
+  const periodic = [...config.training, ...config.monthly];
+  const periodicRows = periodic.length ? `
+    <div class="de-group">
+      <div class="label">Weekly &amp; monthly</div>
+      ${periodic.map(t => `
+        <div class="item de-item${entry[t.id] ? ' done' : ''}" data-de-id="${t.id}"
+             role="checkbox" aria-checked="${!!entry[t.id]}" tabindex="0">
+          <div class="box">${checkMark()}</div>
+          <div class="item-label">${escapeHtml(t.label)}</div>
+        </div>`).join('')}
+    </div>` : '';
+
+  return `
+    <div class="de-inner">
+      <div class="sheet-head">
+        <div>
+          <div class="sheet-title">${date.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })}</div>
+          <div class="label" data-de-count></div>
+        </div>
+        <button class="btn" type="button" data-de-close>Done</button>
+      </div>
+      ${isToday ? '<div class="group-note">This is today — changes here are the same as ticking on the main screen.</div>' : ''}
+      ${rows || '<div class="group-note">No habits were scheduled for this day.</div>'}
+      ${periodicRows}
+      <div class="de-group">
+        <div class="label">What moved</div>
+        <textarea class="note-field" data-de-note rows="2"
+          placeholder="One line. What actually happened.">${escapeHtml(getNote(key))}</textarea>
+      </div>
+    </div>`;
+}
+
+function wireDayEdit(host, key){
+  const date = parseKey(key);
+  const countNode = host.querySelector('[data-de-count]');
+
+  const refreshCount = () => {
+    const entry = getDay(key);
+    const total = dailyTotal(date);
+    const done = dailyItems(date).filter(it => entry[it.id]).length;
+    countNode.textContent = `${done} of ${total} · target ${goodDayMark(date)}`;
+  };
+  refreshCount();
+
+  host.querySelectorAll('[data-de-id]').forEach(node => {
+    const toggleRow = () => {
+      const entry = getDay(key);
+      const id = node.dataset.deId;
+      if(entry[id]) delete entry[id];
+      else entry[id] = true;
+      // Scored against what that day actually asked for, not today's.
+      entry._total = dailyTotal(date);
+      setDay(key, entry);
+
+      const on = !!entry[id];
+      node.classList.toggle('done', on);
+      node.setAttribute('aria-checked', String(on));
+      if(on){
+        node.classList.add('just-done');
+        setTimeout(() => node.classList.remove('just-done'), 400);
+      }
+      refreshCount();
+
+      // Editing today has to move the main screen with it.
+      if(key === dayKey()) today = getDay(key);
+      buildLedger();
+      sync();
+      tap(on ? 'tick' : 'light');
+    };
+    node.addEventListener('click', toggleRow);
+    node.addEventListener('keydown', e => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleRow(); }
+    });
+  });
+
+  const note = host.querySelector('[data-de-note]');
+  let noteTimer;
+  note.addEventListener('input', () => {
+    autoGrow(note);
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(() => {
+      setNote(key, note.value.trim());
+      if(key === dayKey() && el.note) el.note.value = note.value;
+    }, 400);
+  });
+  autoGrow(note);
+
+  host.querySelector('[data-de-close]').addEventListener('click', closeDay);
+}
+
 /* ---------- ledger ---------- */
 function buildLedger(){
   document.querySelectorAll('[data-view]').forEach(b =>
@@ -964,6 +1154,15 @@ function buildLedger(){
   else buildTally();
 }
 
+/* Every drawn day is a way into that day. The ledger was previously
+   decoration you could only look at. */
+function wireLedgerCells(){
+  document.querySelectorAll('[data-day]').forEach(cell => {
+    if(cell.classList.contains('void')) return;
+    cell.addEventListener('click', () => openDay(cell.dataset.day));
+  });
+}
+
 function buildTally(){
   /* Newest first. Chronological order put today at the far right, which
      reads as though the chart starts in the wrong corner — everything
@@ -971,6 +1170,7 @@ function buildTally(){
      today first and history trails off behind it, and the axis caption
      below says which way time runs so it can't be misread. */
   const days = recentHistory().slice().reverse();
+  const { grace } = streakInfo(recentHistory());
   const tKey = dayKey();
 
   el.ledgerLabel.textContent = 'Last 28 days';
@@ -981,7 +1181,9 @@ function buildTally(){
       if(d.key === tKey) cls.push('today');
       if(isGoodDay(d)) cls.push('full');
       else if(d.done > 0) cls.push('partial');
-      const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+      if(grace.has(d.key)) cls.push('grace');
+      const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })
+        + (grace.has(d.key) ? ' — missed, streak carried' : '');
       return `<div class="${cls.join(' ')}" data-day="${d.key}"
         style="height:${38 + ratio * 62}%;${REDUCED_MOTION ? '' : `animation:kd-tally-in 0.5s var(--kd-ease) ${320 + i * 14}ms both`}"
         title="${label} — ${d.done}/${d.total}"></div>`;
@@ -992,6 +1194,7 @@ function buildTally(){
     <span>28 days ago</span>
   </div>`;
   el.tally = document.querySelector('[data-tally]');
+  wireLedgerCells();
 }
 
 function buildYear(){
@@ -1025,6 +1228,7 @@ function buildYear(){
   const wrap = document.querySelector('[data-year-wrap]');
   if(wrap) wrap.scrollLeft = wrap.scrollWidth;
   el.tally = null;
+  wireLedgerCells();
 }
 
 /* ---------- sync ---------- */
@@ -1323,7 +1527,7 @@ function wire(){
   document.querySelectorAll('[data-view]').forEach(b =>
     b.addEventListener('click', () => {
       ledgerView = b.dataset.view;
-      try{ localStorage.setItem('kd-fit:view', ledgerView); }catch(e){ /* ignore */ }
+      try{ localStorage.setItem('kd-fit:view', ledgerView); mirror('kd-fit:view', ledgerView); }catch(e){ /* ignore */ }
       buildLedger();
       sync();
     }));
@@ -1774,7 +1978,7 @@ function wireSheet(sheet){
   const offBtn = q('[data-remind-off]');
   if(offBtn) offBtn.addEventListener('click', async () => {
     await window.KDNative.cancelDaily();
-    try{ localStorage.removeItem('kd-fit:reminder'); }catch(e){ /* ignore */ }
+    try{ localStorage.removeItem('kd-fit:reminder'); unmirror('kd-fit:reminder'); }catch(e){ /* ignore */ }
     reopen(); toast('Reminder off');
   });
 
@@ -2213,10 +2417,43 @@ function checkRollover(){
 document.addEventListener('visibilitychange', () => { if(!document.hidden) checkRollover(); });
 
 /* ---------- boot ---------- */
+/* Recover anything the OS evicted from localStorage before a single
+   read happens, then seed the mirror for installs that predate it.
+   Both are no-ops off-device. */
+async function restoreFromVault(){
+  const n = window.KDNative;
+  if(!n || !n.vaultAvailable || !n.vaultAvailable()) return;
+  const restored = await n.vaultRestore();
+  if(restored){
+    // Storage was cleared under us — reload so every module re-reads.
+    config = loadConfig();
+    today = getDay(dayKey());
+
+    /* Boot has already decided whether to onboard by the time this
+       resolves. If the recovered data says this user was set up long
+       ago, close the wizard rather than letting them configure over
+       the top of their own history. */
+    const host = document.getElementById('onboard');
+    if(host && !host.hidden && read('kd-fit:onboarded', false)){
+      host.hidden = true;
+      host.innerHTML = '';
+      document.body.style.overflow = '';
+      onboardState = null;
+    }
+
+    build();
+    sync();
+    refreshDial();
+    toast(`Restored ${restored} record${restored === 1 ? '' : 's'}`);
+  }
+  n.vaultSeed();
+}
+
 migrate();
 config = loadConfig(); // migrate may have rewritten it
 applyTheme();
 requestPersistence();
+restoreFromVault();
 today = getDay(dayKey());
 build();
 sync();

@@ -1517,3 +1517,46 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
   .celebrate-pane,.celebrate-title,.celebrate-sub{animation:none;opacity:1;transform:none;filter:none;}
   .cel-seg,.cel-count{animation:none;opacity:1;transform:none;filter:none;}
 }
+
+/* A day the streak was carried through. Marked rather than hidden — a
+   streak that survives a miss should say so, or the number stops
+   meaning anything. */
+.tally.grace{
+  background:transparent;
+  border:1.5px dashed rgb(var(--kd-accent-rgb) / 0.65);
+}
+
+/* ============================================================
+   The day editor
+   ============================================================ */
+.dayedit{
+  position:fixed;
+  inset:0;
+  z-index:55;
+  background:var(--kd-bg);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  animation:sheet-in 0.4s var(--kd-ease) both;
+}
+.dayedit[hidden]{display:none;}
+.de-inner{
+  max-width:520px;
+  margin:0 auto;
+  padding:
+    calc(1.5rem + env(safe-area-inset-top))
+    calc(var(--kd-pad) + env(safe-area-inset-right))
+    calc(3rem + env(safe-area-inset-bottom))
+    calc(var(--kd-pad) + env(safe-area-inset-left));
+}
+.de-inner .sheet-head{align-items:flex-start;}
+.de-inner .sheet-head .label{margin-top:0.35rem;}
+.de-group{margin-bottom:1.9rem;}
+.de-group > .label{margin-bottom:0.35rem;}
+/* Rows reuse the main screen's item styling so a past day looks and
+   behaves exactly like today — same box, same tick, same feedback. */
+.de-item{border-top:1px solid var(--kd-line);}
+.de-group .de-item:first-of-type{border-top:none;}
+
+/* The ledger is now interactive, so it should say so. */
+.tally,.ycell{cursor:pointer;}

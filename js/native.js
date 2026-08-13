@@ -116,6 +116,65 @@
     }catch(e){ return false; }
   }
 
+  /* ============================================================
+     Durable storage
+
+     localStorage in a WKWebView is evictable — iOS can clear it under
+     storage pressure, and for a habit log that means silently losing
+     the only thing the app is for. Capacitor Preferences writes to
+     NSUserDefaults instead, which is backed up and survives eviction.
+
+     It is a mirror, not a replacement: localStorage stays the working
+     store because it is synchronous and the whole app reads it that
+     way. Every write is echoed here, and on boot anything missing
+     locally is restored from the mirror.
+     ============================================================ */
+  function prefs(){ return plugins.Preferences; }
+  const vaultAvailable = () => !!(isNative && prefs());
+
+  async function vaultSet(key, value){
+    if(!vaultAvailable()) return;
+    try{ await prefs().set({ key, value }); }catch(e){ /* best effort */ }
+  }
+  async function vaultRemove(key){
+    if(!vaultAvailable()) return;
+    try{ await prefs().remove({ key }); }catch(e){ /* best effort */ }
+  }
+
+  /* Pull anything the mirror has that localStorage doesn't. Runs once
+     at boot, before the app reads its config. Returns how many keys
+     were recovered so the caller can decide whether to re-render. */
+  async function vaultRestore(){
+    if(!vaultAvailable()) return 0;
+    try{
+      const { keys } = await prefs().keys();
+      let restored = 0;
+      for(const key of keys){
+        if(!key.startsWith('kd-fit:')) continue;
+        if(global.localStorage.getItem(key) !== null) continue;
+        const { value } = await prefs().get({ key });
+        if(value === null || value === undefined) continue;
+        global.localStorage.setItem(key, value);
+        restored++;
+      }
+      return restored;
+    }catch(e){ return 0; }
+  }
+
+  /* Copy everything currently local into the mirror — used the first
+     time the vault is seen, so an install that predates it is covered
+     rather than starting from whatever happens to be written next. */
+  async function vaultSeed(){
+    if(!vaultAvailable()) return;
+    try{
+      for(let i = 0; i < global.localStorage.length; i++){
+        const key = global.localStorage.key(i);
+        if(!key || !key.startsWith('kd-fit:')) continue;
+        await vaultSet(key, global.localStorage.getItem(key));
+      }
+    }catch(e){ /* best effort */ }
+  }
+
   /* ---------- chrome ---------- */
   async function ready(){
     if(!isNative) return;
@@ -131,6 +190,11 @@
     cancelDaily,
     reminderPending,
     reminderPermission,
-    ready
+    ready,
+    vaultAvailable,
+    vaultSet,
+    vaultRemove,
+    vaultRestore,
+    vaultSeed
   };
 })(window);
