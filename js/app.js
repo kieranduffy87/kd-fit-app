@@ -53,40 +53,108 @@ const HEALTH_ITEMS = [
   { id: 'talk', label: 'Ten minutes of real conversation' }
 ];
 
+/* The full set the app shipped with. Kept intact because migrate()
+   still installs these for anyone upgrading, and onboarding offers
+   them as packs — but they are no longer what a new user starts with.
+   Twenty-two boxes on day one is a wall, not a system. */
+const LEGACY_DEFAULT_DAILY = [
+  { id: 'body', title: 'Body', items: [
+    { id: 'walk', label: 'Morning walk — 10+ min outside' },
+    { id: 'protein', label: 'Protein at first meal' },
+    { id: 'water', label: 'Water before coffee' }
+  ]},
+  { id: 'mind', title: 'Mind', items: [
+    { id: 'task', label: 'One task done before phone' },
+    { id: 'noinput', label: '5 min no-input' }
+  ]},
+  { id: 'soul', title: 'Soul', items: [
+    { id: 'sleep', label: 'Fixed sleep / wake time' },
+    { id: 'lookforward', label: 'One thing to look forward to' }
+  ]},
+  { id: 'inflammation', title: 'Inflammation', items: INFLAMMATION_ITEMS },
+  { id: 'health', title: 'General health', items: HEALTH_ITEMS }
+];
+
+/* What onboarding offers. Deliberately short lists — the point is to
+   leave with three or four things you will actually do, not to browse
+   a catalogue. Everything here is editable afterwards. */
+const HABIT_LIBRARY = [
+  { id: 'lib-move', title: 'Move', items: [
+    { id: 'walk', label: 'Walk — 10+ minutes outside' },
+    { id: 'move30', label: 'Move for 30 minutes' },
+    { id: 'stretch', label: 'Stretch or mobility' },
+    { id: 'steps', label: '8,000 steps' }
+  ]},
+  { id: 'lib-eat', title: 'Eat', items: [
+    { id: 'water', label: 'Two litres of water' },
+    { id: 'protein', label: 'Protein at first meal' },
+    { id: 'colour', label: 'Two portions of veg or fruit' },
+    { id: 'noalcohol', label: 'Alcohol-free day' }
+  ]},
+  { id: 'lib-rest', title: 'Rest', items: [
+    { id: 'sleep', label: 'Fixed sleep / wake time' },
+    { id: 'sleep7', label: "Seven hours' sleep" },
+    { id: 'nophone', label: 'No phone for the first hour' },
+    { id: 'daylight', label: 'Daylight within an hour of waking' }
+  ]},
+  { id: 'lib-mind', title: 'Mind', items: [
+    { id: 'noinput', label: 'Five quiet minutes' },
+    { id: 'task', label: 'One real task before the phone' },
+    { id: 'read', label: 'Read ten pages' },
+    { id: 'journal', label: 'Write one line about the day' }
+  ]},
+  { id: 'lib-people', title: 'People', items: [
+    { id: 'talk', label: 'Ten minutes of real conversation' },
+    { id: 'reachout', label: 'Message someone you care about' },
+    { id: 'gratitude', label: 'Name one good thing' }
+  ]}
+];
+
+/* Starter suggestions by focus — three each, which is the number
+   people actually sustain in week one. */
+const STARTER_PACKS = {
+  movement: { label: 'Move more',       picks: ['walk', 'stretch', 'water'] },
+  calm:     { label: 'Feel calmer',     picks: ['noinput', 'nophone', 'sleep'] },
+  health:   { label: 'Get healthier',   picks: ['walk', 'water', 'sleep7'] },
+  focus:    { label: 'Focus better',    picks: ['task', 'nophone', 'read'] }
+};
+
+const THEMES = ['system', 'dark', 'light'];
+const ACCENTS = [
+  { id: 'blue',   label: 'Blue',   hex: '#0339f8' },
+  { id: 'violet', label: 'Violet', hex: '#7c3aed' },
+  { id: 'rose',   label: 'Rose',   hex: '#e11d63' },
+  { id: 'amber',  label: 'Amber',  hex: '#d97706' },
+  { id: 'green',  label: 'Green',  hex: '#059669' },
+  { id: 'teal',   label: 'Teal',   hex: '#0891b2' }
+];
+
 const DEFAULT_CONFIG = {
-  birthday: '2027-05-07',
-  // Daily habits — these drive the ring, the streak and the ledger.
+  // An optional thing you are counting toward. No date means the dial
+  // shows today instead of a countdown — most people are not training
+  // for a birthday.
+  goal: { label: '', date: '' },
   daily: [
-    { id: 'body', title: 'Body', items: [
-      { id: 'walk', label: 'Morning walk — 10+ min outside' },
-      { id: 'protein', label: 'Protein at first meal' },
-      { id: 'water', label: 'Water before coffee' }
-    ]},
-    { id: 'mind', title: 'Mind', items: [
-      { id: 'task', label: 'One task done before phone' },
-      { id: 'noinput', label: '5 min no-input' }
-    ]},
-    { id: 'soul', title: 'Soul', items: [
-      { id: 'sleep', label: 'Fixed sleep / wake time' },
-      { id: 'lookforward', label: 'One thing to look forward to' }
-    ]},
-    { id: 'inflammation', title: 'Inflammation', items: INFLAMMATION_ITEMS },
-    { id: 'health', title: 'General health', items: HEALTH_ITEMS }
+    { id: 'daily', title: 'Every day', items: [
+      { id: 'walk', label: 'Walk — 10+ minutes outside' },
+      { id: 'water', label: 'Two litres of water' },
+      { id: 'sleep', label: 'Fixed sleep / wake time' }
+    ]}
   ],
-  // Training is a weekly target, not a daily box. A rest day is not a
-  // failure, so it must not be able to break a streak.
-  training: [
-    { id: 'lift', label: 'Lift', target: 2 },
-    { id: 'football', label: 'Football', target: 1 },
-    { id: 'mobility', label: 'Mobility', target: 3 }
-  ]
+  // Weekly targets, not daily boxes — a rest day is not a failure.
+  training: [],
+  // The same idea over a calendar month, for the things that are too
+  // occasional to be weekly: a long walk, a proper day off, a haircut.
+  monthly: [],
+  theme: 'system',
+  accent: 'blue'
 };
 
 const HISTORY_DAYS = 28;
 const YEAR_WEEKS = 53;
 const GOOD_DAY = 0.7;
 
-const KD_MARK = `<svg viewBox="0 0 18.62 11.73" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon fill="#0339f8" points="18.62 0 12 0 6 5.86 12 11.73 18.62 11.73 12.62 5.86 18.62 0"/><polygon fill="#eceef2" points="0 0 0 11.72 6 5.86 0 0"/></svg>`;
+const KD_MARK = `<svg viewBox="0 0 18.62 11.73" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon fill="var(--kd-accent)" points="18.62 0 12 0 6 5.86 12 11.73 18.62 11.73 12.62 5.86 18.62 0"/><polygon fill="var(--kd-text)" points="0 0 0 11.72 6 5.86 0 0"/></svg>`;
 const ICON_COG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
 
 const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
@@ -112,17 +180,54 @@ function loadConfig(){
   const stored = read('kd-fit:config', null);
   if(!stored) return structuredClone(DEFAULT_CONFIG);
   // Merge shallowly so a config saved by an older build still boots.
+  // `birthday` was the only goal there used to be; fold it into the
+  // general shape rather than leaving two sources of truth.
+  const goal = stored.goal && typeof stored.goal === 'object'
+    ? { label: stored.goal.label || '', date: stored.goal.date || '' }
+    : { label: stored.birthday ? '40' : '', date: stored.birthday || '' };
+
   return {
-    birthday: stored.birthday || DEFAULT_CONFIG.birthday,
-    daily: Array.isArray(stored.daily) && stored.daily.length ? stored.daily : DEFAULT_CONFIG.daily,
-    training: Array.isArray(stored.training) && stored.training.length ? stored.training : DEFAULT_CONFIG.training
+    goal,
+    daily: Array.isArray(stored.daily) && stored.daily.length ? stored.daily : structuredClone(DEFAULT_CONFIG.daily),
+    training: Array.isArray(stored.training) ? stored.training : [],
+    monthly: Array.isArray(stored.monthly) ? stored.monthly : [],
+    theme: THEMES.includes(stored.theme) ? stored.theme : 'system',
+    accent: ACCENTS.some(a => a.id === stored.accent) ? stored.accent : 'blue'
   };
 }
 function saveConfig(){ write('kd-fit:config', config); }
 
-function dailyItems(){ return config.daily.flatMap(s => s.items); }
-function dailyTotal(){ return dailyItems().length; }
-function goodDayMark(){ return Math.ceil(dailyTotal() * GOOD_DAY); }
+/* ---------- which habits apply today ----------
+   An item with no `days` runs every day. `days` is a list of JS
+   weekday numbers (0 Sunday … 6 Saturday), so a Tuesday-only habit
+   never makes a Thursday look failed — the day is scored against what
+   was actually asked of it. */
+function itemRunsOn(item, date){
+  if(!Array.isArray(item.days) || !item.days.length) return true;
+  return item.days.includes(date.getDay());
+}
+function sectionItemsOn(sec, date){
+  return sec.items.filter(it => itemRunsOn(it, date));
+}
+function dailyItems(date = new Date()){
+  return config.daily.flatMap(s => sectionItemsOn(s, date));
+}
+function dailyTotal(date = new Date()){ return dailyItems(date).length; }
+function goodDayMark(date = new Date()){
+  return Math.max(1, Math.ceil(dailyTotal(date) * GOOD_DAY));
+}
+
+const DAY_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/* "Mon, Wed, Fri" / "Every day" — for the settings summary line. */
+function daysLabel(item){
+  if(!Array.isArray(item.days) || !item.days.length) return 'Every day';
+  if(item.days.length === 7) return 'Every day';
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  return order.filter(d => item.days.includes(d))
+    .map(d => DAY_FULL[d].slice(0, 3)).join(', ');
+}
 
 /* ---------- dates ---------- */
 function dayKey(d = new Date()){
@@ -138,13 +243,58 @@ function parseKey(key){
 function midnight(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 function addDays(d, n){ const c = new Date(d); c.setDate(c.getDate() + n); return c; }
 
-function birthdayDate(){
-  const d = parseKey(config.birthday);
-  return isNaN(d) ? parseKey(DEFAULT_CONFIG.birthday) : d;
+/* ---------- the goal ----------
+   Optional. With a date set the dial counts down to it; without one it
+   shows how much of today is done, which is what most people want and
+   what every new install now starts as. */
+function hasGoal(){
+  return !!(config.goal && config.goal.date && !isNaN(parseKey(config.goal.date)));
 }
-function daysUntilBirthday(){
-  return Math.round((midnight(birthdayDate()) - midnight(new Date())) / 86400000);
+function goalDate(){ return parseKey(config.goal.date); }
+function daysUntilGoal(){
+  if(!hasGoal()) return 0;
+  return Math.round((midnight(goalDate()) - midnight(new Date())) / 86400000);
 }
+function goalReached(){ return hasGoal() && daysUntilGoal() <= 0; }
+
+/* ---------- theme ----------
+   Applied to <html> before first paint by a snippet in index.html, and
+   again here whenever it changes. "system" follows the OS and keeps
+   following it — the listener stays live for the life of the page. */
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+function resolvedTheme(){
+  if(config.theme === 'system') return systemDark.matches ? 'dark' : 'light';
+  return config.theme;
+}
+function applyTheme(){
+  const root = document.documentElement;
+  const theme = resolvedTheme();
+  root.setAttribute('data-theme', theme);
+  root.setAttribute('data-accent', config.accent || 'blue');
+  // The iOS status bar reads this, so it has to move with the palette
+  // or the notch area stays the old colour.
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta){
+    meta.setAttribute('content', theme === 'light' ? '#f7f7f9' : '#08090b');
+  }
+  // Enables the cross-fade only after the first paint, so loading the
+  // app in light mode doesn't animate from dark.
+  requestAnimationFrame(() => root.setAttribute('data-theme-ready', ''));
+
+  /* The 3D seal bakes its colours in at build time, so it has to be
+     thrown away and rebuilt against the new tokens. */
+  if(mark3d){
+    mark3d.stop();
+    mark3d = null;
+    const svg = document.querySelector('[data-mark3d]');
+    if(svg) svg.innerHTML = '';
+    if(document.body.classList.contains('is-complete')) syncSeal(true);
+  }
+}
+systemDark.addEventListener('change', () => {
+  if(config.theme === 'system') applyTheme();
+});
 
 // Weeks run Monday to Sunday.
 function weekStart(d = new Date()){
@@ -179,11 +329,21 @@ function dailyDone(entry){
    would raise the bar on every day already behind you and wipe out a
    streak you actually earned. Days logged before this existed fall back
    to the current count. */
-function trainingIdSet(){ return new Set(config.training.map(t => t.id)); }
+/* Weekly and monthly ticks live in the same day record as the daily
+   habits, so they must be excluded from the daily count or a gym
+   session would inflate the ring. */
+function trainingIdSet(){
+  return new Set([
+    ...config.training.map(t => t.id),
+    ...config.monthly.map(t => t.id)
+  ]);
+}
 
-function dayTotalOf(entry){
+function dayTotalOf(entry, date = new Date()){
   const t = Number(entry._total);
-  return t > 0 ? t : dailyTotal();
+  // Falling back to that date's own schedule, not today's, so a day
+  // logged before _total existed is still judged by what it asked for.
+  return t > 0 ? t : dailyTotal(date);
 }
 
 // Counts every non-training tick, so a habit since renamed or removed
@@ -239,7 +399,7 @@ function stampTotals(keys, priorTotal){
 
 function migrate(){
   const at = read('kd-fit:migrated', 0);
-  if(at >= 5) return;
+  if(at >= 6) return; // must match the version stamped at the end
   const keys = dayKeysInStorage();
 
   if(at < 3){
@@ -277,7 +437,29 @@ function migrate(){
     }
   }
 
-  write('kd-fit:migrated', 5);
+  /* v6 — onboarding arrives. Anyone with a saved config or a single
+     logged day has already set this app up by hand, and must not be
+     dropped into a first-run wizard that would overwrite it. */
+  if(at < 6){
+    const stored = read('kd-fit:config', null);
+    if(stored || keys.length) write('kd-fit:onboarded', true);
+  }
+
+  write('kd-fit:migrated', 6);
+}
+
+/* localStorage in a WKWebView is evictable — iOS can clear it under
+   storage pressure, which for a habit log means silently losing the
+   history that is the entire point. This asks the browser to treat it
+   as persistent; it is best-effort and unsupported in some engines. */
+function requestPersistence(){
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      navigator.storage.persisted().then(already => {
+        if(!already) navigator.storage.persist().catch(() => {});
+      }).catch(() => {});
+    }
+  }catch(e){ /* not fatal — the app works either way */ }
 }
 
 /* ---------- computed history ---------- */
@@ -288,7 +470,7 @@ function historyFrom(startDate, count){
     const d = addDays(startDate, i);
     const key = dayKey(d);
     const entry = getDay(key);
-    const total = dayTotalOf(entry);
+    const total = dayTotalOf(entry, d);
     days.push({ key, date: d, total, done: loggedCount(entry, total, tids) });
   }
   return days;
@@ -333,6 +515,33 @@ function trainingWeek(){
 function trainingProgress(week){
   const target = week.reduce((n, t) => n + t.target, 0);
   const hit = week.reduce((n, t) => n + Math.min(t.count, t.target), 0);
+  return { hit, target, ratio: target ? hit / target : 0 };
+}
+
+/* ---------- monthly ----------
+   Same mechanism as training over a calendar month. Deliberately not a
+   rolling 30 days: "twice this month" is how people actually think,
+   and a month that resets on the 1st gives a clean run at it. */
+function monthDays(d = new Date()){
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const keys = [];
+  for(let i = 1; i <= end.getDate(); i++){
+    keys.push(dayKey(new Date(start.getFullYear(), start.getMonth(), i)));
+  }
+  return keys;
+}
+function monthlyMonth(){
+  const entries = monthDays().map(getDay);
+  return config.monthly.map(t => ({
+    ...t,
+    count: entries.filter(e => e[t.id]).length,
+    todayOn: !!today[t.id]
+  }));
+}
+function monthlyProgress(month){
+  const target = month.reduce((n, t) => n + t.target, 0);
+  const hit = month.reduce((n, t) => n + Math.min(t.count, t.target), 0);
   return { hit, target, ratio: target ? hit / target : 0 };
 }
 
@@ -424,7 +633,7 @@ function buildGauge(type, n, uid){
     }).join('');
     return `<svg class="g g-heat" viewBox="0 0 ${G} ${G}" aria-hidden="true">
       <defs><linearGradient id="h${uid}" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="#ff7a59"/><stop offset="1" stop-color="#0339f8"/>
+        <stop offset="0" stop-color="var(--kd-warm)"/><stop offset="1" stop-color="var(--kd-accent)"/>
       </linearGradient></defs>
       <path class="heat-track" d="${arcPath(24, -104, 104)}" stroke="url(#h${uid})"/>
       ${ticks}
@@ -466,7 +675,7 @@ function syncGauge(node, type, done, total){
     needle.style.transform = `rotate(${deg}deg)`;
     if(type === 'heat'){
       needle.style.setProperty('--needle',
-        `color-mix(in srgb, #0339f8 ${Math.round(ratio * 100)}%, #ff7a59)`);
+        `color-mix(in srgb, var(--kd-accent) ${Math.round(ratio * 100)}%, var(--kd-warm))`);
     }
   }
 
@@ -491,6 +700,32 @@ function toast(message){
   node._t = setTimeout(() => node.classList.remove('show'), 2400);
 }
 
+/* ---------- what the dial says ----------
+   With a future goal it counts down to it. Otherwise the same dial
+   reports today, so the app opens with something true on it rather
+   than someone else's birthday. */
+function countdownMode(){ return hasGoal() && daysUntilGoal() > 0; }
+
+function dialUnit(){
+  if(countdownMode()){
+    const label = (config.goal.label || '').trim();
+    const n = daysUntilGoal();
+    return label
+      ? `${n === 1 ? 'Day' : 'Days'} to <em>${escapeHtml(label)}</em>`
+      : `${n === 1 ? 'Day' : 'Days'} to go`;
+  }
+  if(goalReached() && (config.goal.label || '').trim()){
+    return `<em>${escapeHtml(config.goal.label.trim())}</em> — here`;
+  }
+  return `of ${dailyTotal()} today`;
+}
+function dialDate(){
+  if(countdownMode()){
+    return goalDate().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+  }
+  return new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+}
+
 /* ============================================================
    Build once, then patch. Rebuilding the DOM per tap would
    restart every entrance animation and cut transitions short.
@@ -501,35 +736,47 @@ let ledgerView = (() => {
 })();
 
 function build(){
-  const bday = birthdayDate();
+  const now = new Date();
 
-  const sections = config.daily.map((sec, i) => `
+  /* Only today's habits are rendered. A Tuesday habit on a Thursday
+     isn't greyed out, it's simply not today's business — and because
+     the day is scored against what it asked for, its absence can't
+     cost you the day. */
+  const todaySections = config.daily
+    .map(sec => ({ sec, items: sectionItemsOn(sec, now) }))
+    .filter(x => x.items.length);
+
+  const sections = todaySections.map(({ sec, items }, i) => {
+    const hidden = sec.items.length - items.length;
+    return `
     <section class="card rise" style="animation-delay:${300 + i * 70}ms" data-section="${sec.id}">
       <div class="card-head">
         <div class="card-headings">
           <h2 class="card-title">${escapeHtml(sec.title)}</h2>
-          <div class="card-count" data-count><b>0</b>/${sec.items.length}</div>
+          <div class="card-count" data-count><b>0</b>/${items.length}</div>
         </div>
-        <div class="gauge" data-gauge>${buildGauge(gaugeType(sec.id), sec.items.length, sec.id)}</div>
+        <div class="gauge" data-gauge>${buildGauge(gaugeType(sec.id), items.length, sec.id)}</div>
       </div>
-      ${sec.items.map(it => `
+      ${items.map(it => `
         <div class="item" data-id="${it.id}" role="checkbox" aria-checked="false" tabindex="0">
           <div class="box">${checkMark()}</div>
           <div class="item-label">${escapeHtml(it.label)}</div>
         </div>`).join('')}
-    </section>`).join('');
+      ${hidden ? `<div class="card-aside">${hidden} not scheduled today</div>` : ''}
+    </section>`;
+  }).join('');
 
-  const trainingRows = config.training.map(t => `
+  const periodRows = (list, unit) => list.map(t => `
     <div class="train" data-id="${t.id}" role="checkbox" aria-checked="false" tabindex="0">
       <div class="box">${checkMark()}</div>
       <div class="train-body">
         <div class="train-label">${escapeHtml(t.label)}</div>
-        <div class="train-sub" data-train-sub>0/${t.target} this week</div>
+        <div class="train-sub" data-train-sub>0/${t.target} ${unit}</div>
       </div>
       <div class="pips" data-pips></div>
     </div>`).join('');
 
-  const delay = 300 + config.daily.length * 70;
+  const delay = 300 + todaySections.length * 70;
 
   document.getElementById('app').innerHTML = `
     <header class="masthead rise">
@@ -554,9 +801,11 @@ function build(){
           <line class="dial-target" data-target/>
         </svg>
         <div class="dial-face" data-face>
-          <div class="dial-num num" data-days>${REDUCED_MOTION ? daysUntilBirthday() : 0}</div>
-          <div class="dial-unit">Days to <em>40.</em></div>
-          <div class="dial-date">${bday.toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })}</div>
+          <div class="dial-num num" data-days>${
+            countdownMode() ? (REDUCED_MOTION ? daysUntilGoal() : 0) : dailyDone(today)
+          }</div>
+          <div class="dial-unit" data-dial-unit>${dialUnit()}</div>
+          <div class="dial-date" data-dial-date>${dialDate()}</div>
         </div>
         <div class="dial-seal" data-seal>
           <svg viewBox="-100 -100 200 200" data-mark3d aria-hidden="true"></svg>
@@ -593,18 +842,33 @@ function build(){
 
     ${sections}
 
+    ${config.training.length ? `
     <section class="card rise" style="animation-delay:${delay}ms" data-training>
       <div class="card-head">
         <div class="card-headings">
-          <h2 class="card-title">Training</h2>
+          <h2 class="card-title">This week</h2>
           <div class="card-count" data-week-count><b>0</b>/0 this week</div>
         </div>
         <div class="gauge" data-week-gauge>${
           buildGauge('arc', config.training.reduce((n, t) => n + t.target, 0) || 1, 'train')
         }</div>
       </div>
-      ${trainingRows}
-    </section>
+      ${periodRows(config.training, 'this week')}
+    </section>` : ''}
+
+    ${config.monthly.length ? `
+    <section class="card rise" style="animation-delay:${delay + 30}ms" data-monthly>
+      <div class="card-head">
+        <div class="card-headings">
+          <h2 class="card-title">This month</h2>
+          <div class="card-count" data-month-count><b>0</b>/0 this month</div>
+        </div>
+        <div class="gauge" data-month-gauge>${
+          buildGauge('clock', config.monthly.reduce((n, t) => n + t.target, 0) || 1, 'month')
+        }</div>
+      </div>
+      ${periodRows(config.monthly, 'this month')}
+    </section>` : ''}
 
     <section class="card pad-b rise" style="animation-delay:${delay + 60}ms">
       <div class="card-head">
@@ -642,6 +906,9 @@ function build(){
   el.note = document.querySelector('[data-note]');
   el.weekCount = document.querySelector('[data-week-count]');
   el.weekGauge = document.querySelector('[data-week-gauge]');
+  el.monthCount = document.querySelector('[data-month-count]');
+  el.monthGauge = document.querySelector('[data-month-gauge]');
+  el.dialUnit = document.querySelector('[data-dial-unit]');
   el.items = Array.from(document.querySelectorAll('.item'));
   el.trains = Array.from(document.querySelectorAll('.train'));
 
@@ -754,13 +1021,22 @@ function sync(){
     el.target.setAttribute('y2', (140 + Math.sin(rad) * (R + 9)).toFixed(2));
   }
 
+  const now = new Date();
   config.daily.forEach(sec => {
     const card = document.querySelector(`[data-section="${sec.id}"]`);
     if(!card) return;
-    const n = sec.items.filter(it => today[it.id]).length;
-    card.querySelector('[data-count]').innerHTML = `<b>${n}</b>/${sec.items.length}`;
-    syncGauge(card.querySelector('[data-gauge]'), gaugeType(sec.id), n, sec.items.length);
+    const scheduled = sectionItemsOn(sec, now);
+    const n = scheduled.filter(it => today[it.id]).length;
+    card.querySelector('[data-count]').innerHTML = `<b>${n}</b>/${scheduled.length}`;
+    syncGauge(card.querySelector('[data-gauge]'), gaugeType(sec.id), n, scheduled.length);
   });
+
+  // In progress mode the dial's big number is today's count, so it has
+  // to move on every tick rather than only at boot.
+  if(!countdownMode() && el.days){
+    el.days.textContent = done;
+    if(el.dialUnit) el.dialUnit.innerHTML = dialUnit();
+  }
 
   el.items.forEach(node => {
     const on = !!today[node.dataset.id];
@@ -768,20 +1044,30 @@ function sync(){
     node.setAttribute('aria-checked', String(on));
   });
 
-  // training — weekly
+  // weekly and monthly share a row shape, so they share the patching
   const week = trainingWeek();
-  const prog = trainingProgress(week);
-  el.weekCount.innerHTML = `<b>${prog.hit}</b>/${prog.target} this week`;
-  syncGauge(el.weekGauge, 'arc', prog.hit, prog.target);
+  const month = monthlyMonth();
+  if(el.weekCount){
+    const prog = trainingProgress(week);
+    el.weekCount.innerHTML = `<b>${prog.hit}</b>/${prog.target} this week`;
+    syncGauge(el.weekGauge, 'arc', prog.hit, prog.target);
+  }
+  if(el.monthCount){
+    const prog = monthlyProgress(month);
+    el.monthCount.innerHTML = `<b>${prog.hit}</b>/${prog.target} this month`;
+    syncGauge(el.monthGauge, 'clock', prog.hit, prog.target);
+  }
 
   el.trains.forEach(node => {
-    const t = week.find(x => x.id === node.dataset.id);
+    const isMonth = !!node.closest('[data-monthly]');
+    const t = (isMonth ? month : week).find(x => x.id === node.dataset.id);
     if(!t) return;
+    const unit = isMonth ? 'this month' : 'this week';
     node.classList.toggle('done', t.todayOn);
     node.classList.toggle('hit', t.count >= t.target);
     node.setAttribute('aria-checked', String(t.todayOn));
     node.querySelector('[data-train-sub]').textContent =
-      t.count >= t.target ? `Target met — ${t.count}/${t.target}` : `${t.count}/${t.target} this week`;
+      t.count >= t.target ? `Target met — ${t.count}/${t.target}` : `${t.count}/${t.target} ${unit}`;
     node.querySelector('[data-pips]').innerHTML =
       Array.from({ length: t.target }, (_, i) =>
         `<div class="pip${i < t.count ? ' on' : ''}"></div>`).join('');
@@ -927,6 +1213,18 @@ function autoGrow(node){
   node.style.height = `${node.scrollHeight}px`;
 }
 
+/* The dial's headline number. Only the countdown counts up — in
+   progress mode sync() already owns that number, and animating it on
+   every tick would fight the tick itself. */
+function refreshDial(){
+  if(!el.days) return;
+  if(el.dialUnit) el.dialUnit.innerHTML = dialUnit();
+  const dateNode = document.querySelector('[data-dial-date]');
+  if(dateNode) dateNode.textContent = dialDate();
+  if(countdownMode()) countUp(el.days, daysUntilGoal());
+  else el.days.textContent = dailyDone(today);
+}
+
 /* ---------- count-up ---------- */
 function countUp(node, target){
   if(REDUCED_MOTION){ node.textContent = target; return; }
@@ -957,6 +1255,24 @@ function closeSheet(){
   document.body.style.overflow = '';
 }
 
+/* Monday-first, which is how a week reads even though JS starts on
+   Sunday. The value stored is still the JS index. */
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+function dayChips(si, ii, item){
+  // No `days` at all means every day, so every chip reads as on.
+  const on = d => !Array.isArray(item.days) || !item.days.length || item.days.includes(d);
+  return `
+    <div class="days" role="group" aria-label="Days this habit runs">
+      ${WEEK_ORDER.map(d => `
+        <button type="button" class="day${on(d) ? ' on' : ''}"
+                data-day-toggle="${si}.${ii}.${d}"
+                aria-pressed="${on(d)}"
+                title="${DAY_FULL[d]}">${DAY_NAMES[d]}</button>`).join('')}
+      <span class="days-note" data-days-note="${si}.${ii}">${escapeHtml(daysLabel(item))}</span>
+    </div>`;
+}
+
 function sheetMarkup(){
   const sections = config.daily.map((sec, si) => `
     <div class="sub-head">
@@ -964,9 +1280,12 @@ function sheetMarkup(){
       <button class="add" type="button" data-add-item="${si}">+ Habit</button>
     </div>
     ${sec.items.map((it, ii) => `
-      <div class="field">
-        <input class="input" data-item="${si}.${ii}" value="${escapeHtml(it.label)}" aria-label="Habit">
-        <button class="remove" type="button" data-del-item="${si}.${ii}" aria-label="Remove habit">&times;</button>
+      <div class="field-group">
+        <div class="field">
+          <input class="input" data-item="${si}.${ii}" value="${escapeHtml(it.label)}" aria-label="Habit">
+          <button class="remove" type="button" data-del-item="${si}.${ii}" aria-label="Remove habit">&times;</button>
+        </div>
+        ${dayChips(si, ii, it)}
       </div>`).join('')}
   `).join('');
 
@@ -976,6 +1295,14 @@ function sheetMarkup(){
       <input class="input narrow" data-train-target="${i}" type="number" min="1" max="14"
              value="${t.target}" aria-label="Times per week" inputmode="numeric">
       <button class="remove" type="button" data-del-train="${i}" aria-label="Remove activity">&times;</button>
+    </div>`).join('');
+
+  const monthly = config.monthly.map((t, i) => `
+    <div class="field">
+      <input class="input" data-month="${i}" value="${escapeHtml(t.label)}" aria-label="Thing">
+      <input class="input narrow" data-month-target="${i}" type="number" min="1" max="31"
+             value="${t.target}" aria-label="Times per month" inputmode="numeric">
+      <button class="remove" type="button" data-del-month="${i}" aria-label="Remove">&times;</button>
     </div>`).join('');
 
   const sub = read('kd-fit:push', null);
@@ -988,29 +1315,66 @@ function sheetMarkup(){
     </div>
 
     <div class="group">
-      <div class="label">The date</div>
-      <input class="input" type="date" data-birthday value="${escapeHtml(config.birthday)}">
-      <div class="group-note">Everything counts down to this.</div>
+      <div class="label">Appearance</div>
+      <div class="seg theme-seg">
+        ${THEMES.map(t => `
+          <button type="button" data-theme-pick="${t}" class="${config.theme === t ? 'is-active' : ''}">
+            ${t[0].toUpperCase() + t.slice(1)}
+          </button>`).join('')}
+      </div>
+      <div class="swatches">
+        ${ACCENTS.map(a => `
+          <button type="button" class="swatch${config.accent === a.id ? ' is-active' : ''}"
+                  data-accent-pick="${a.id}" style="--sw:${a.hex}"
+                  aria-label="${a.label}" aria-pressed="${config.accent === a.id}"></button>`).join('')}
+      </div>
+      <div class="group-note">System follows your phone's light and dark setting.</div>
+    </div>
+
+    <div class="group">
+      <div class="label">Working toward</div>
+      <div class="field">
+        <input class="input" data-goal-label value="${escapeHtml(config.goal.label || '')}"
+               placeholder="A race, a birthday, a trip…" aria-label="Goal name">
+      </div>
+      <input class="input" type="date" data-goal-date value="${escapeHtml(config.goal.date || '')}" aria-label="Goal date">
+      <div class="group-note">
+        Optional. With a date set, the dial counts down to it — leave it empty
+        and the dial shows today instead.
+      </div>
     </div>
 
     <div class="group">
       <div class="label">Daily habits</div>
       ${sections}
       <div class="group-note">
-        These drive the ring, the streak and the ledger. Renaming keeps the
-        history attached; removing a habit leaves its past ticks in place but
-        stops counting it.
+        These drive the ring, the streak and the ledger. Tap the day letters to
+        run a habit only on certain days — a Tuesday habit can't cost you a
+        Thursday. Renaming keeps the history attached; removing a habit leaves
+        its past ticks in place but stops counting it.
       </div>
     </div>
 
     <div class="group">
       <div class="sub-head">
-        <div class="label">Training — times per week</div>
+        <div class="label">Weekly — times per week</div>
         <button class="add" type="button" data-add-train>+ Activity</button>
       </div>
       ${training}
       <div class="group-note">
         Weekly targets, not daily boxes — a rest day can't break a streak.
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="sub-head">
+        <div class="label">Monthly — times per month</div>
+        <button class="add" type="button" data-add-month>+ Thing</button>
+      </div>
+      ${monthly}
+      <div class="group-note">
+        For what's too occasional to be weekly — a long walk, a proper day off,
+        seeing people. Resets on the 1st.
       </div>
     </div>
 
@@ -1124,13 +1488,75 @@ function wireSheet(sheet){
     config.training.splice(+b.dataset.delTrain, 1);
     saveConfig(); reopen();
   }));
+  q('[data-add-month]').addEventListener('click', () => {
+    collect(sheet);
+    config.monthly.push({ id: newId(), label: 'New thing', target: 1 });
+    saveConfig(); reopen();
+  });
+  all('[data-del-month]').forEach(b => b.addEventListener('click', () => {
+    collect(sheet);
+    config.monthly.splice(+b.dataset.delMonth, 1);
+    saveConfig(); reopen();
+  }));
+
+  /* Theme and accent apply on the spot — picking a colour you can't see
+     until you close the sheet is a guessing game. */
+  all('[data-theme-pick]').forEach(b => b.addEventListener('click', () => {
+    config.theme = b.dataset.themePick;
+    saveConfig(); applyTheme();
+    all('[data-theme-pick]').forEach(x => x.classList.toggle('is-active', x === b));
+    tap('light');
+  }));
+  all('[data-accent-pick]').forEach(b => b.addEventListener('click', () => {
+    config.accent = b.dataset.accentPick;
+    saveConfig(); applyTheme();
+    all('[data-accent-pick]').forEach(x => {
+      const on = x === b;
+      x.classList.toggle('is-active', on);
+      x.setAttribute('aria-pressed', String(on));
+    });
+    tap('light');
+  }));
+
+  /* Day chips patch in place rather than rebuilding the sheet — a
+     rebuild would throw you back to the top of a long scroll. */
+  all('[data-day-toggle]').forEach(b => b.addEventListener('click', () => {
+    const [si, ii, d] = b.dataset.dayToggle.split('.').map(Number);
+    const item = config.daily[si]?.items[ii];
+    if(!item) return;
+    // Absent `days` means every day; materialise it before removing one.
+    if(!Array.isArray(item.days) || !item.days.length) item.days = [0, 1, 2, 3, 4, 5, 6];
+    const at = item.days.indexOf(d);
+    if(at >= 0) item.days.splice(at, 1);
+    else item.days.push(d);
+    // Every day selected is the same as no constraint — store it that
+    // way so the habit keeps working if the week model ever changes.
+    if(item.days.length === 7) delete item.days;
+    // A habit on no days would silently vanish, so the last one stays.
+    if(Array.isArray(item.days) && !item.days.length){
+      item.days = [d];
+      toast('A habit needs at least one day');
+    }
+    const on = !Array.isArray(item.days) || item.days.includes(d);
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+    const note = q(`[data-days-note="${si}.${ii}"]`);
+    if(note) note.textContent = daysLabel(item);
+    saveConfig();
+    tap('light');
+  }));
 
   q('[data-export]').addEventListener('click', exportBackup);
   q('[data-import]').addEventListener('click', () => q('[data-import-file]').click());
   q('[data-import-file]').addEventListener('change', e => importBackup(e.target.files[0]));
 
   q('[data-reset]').addEventListener('click', () => {
+    // Appearance isn't part of "the defaults" anyone means here — being
+    // thrown back to dark blue for resetting your habits is a surprise.
+    const { theme, accent } = config;
     config = structuredClone(DEFAULT_CONFIG);
+    config.theme = theme;
+    config.accent = accent;
     saveConfig(); reopen(); toast('Settings reset');
   });
 
@@ -1169,8 +1595,12 @@ function newId(){ return 'i' + Math.random().toString(36).slice(2, 8); }
 
 // Read the sheet's inputs back into config without touching the DOM order.
 function collect(sheet){
-  const bday = sheet.querySelector('[data-birthday]');
-  if(bday && bday.value) config.birthday = bday.value;
+  const goalLabel = sheet.querySelector('[data-goal-label]');
+  const goalDateInput = sheet.querySelector('[data-goal-date]');
+  if(goalLabel) config.goal.label = goalLabel.value.trim();
+  // An empty date is a real choice — it turns the countdown off — so
+  // this writes the empty string rather than skipping the assignment.
+  if(goalDateInput) config.goal.date = goalDateInput.value || '';
 
   sheet.querySelectorAll('[data-section-title]').forEach(input => {
     const si = +input.dataset.sectionTitle;
@@ -1190,6 +1620,15 @@ function collect(sheet){
     const n = parseInt(input.value, 10);
     if(t && n >= 1 && n <= 14) t.target = n;
   });
+  sheet.querySelectorAll('[data-month]').forEach(input => {
+    const t = config.monthly[+input.dataset.month];
+    if(t) t.label = input.value.trim() || t.label;
+  });
+  sheet.querySelectorAll('[data-month-target]').forEach(input => {
+    const t = config.monthly[+input.dataset.monthTarget];
+    const n = parseInt(input.value, 10);
+    if(t && n >= 1 && n <= 31) t.target = n;
+  });
 }
 
 function reopen(){
@@ -1204,7 +1643,290 @@ function persist(){
   today = getDay(dayKey());
   build();
   sync();
-  countUp(el.days, daysUntilBirthday());
+  refreshDial();
+}
+
+/* ============================================================
+   Onboarding
+
+   Four screens, and you can leave at any point with something that
+   works. The defaults are deliberately modest — the failure mode for a
+   habit app is not "too few habits", it's a list so long that day one
+   ends at 4/22 and there is no day two.
+   ============================================================ */
+let onboardState = null;
+
+function needsOnboarding(){
+  return !read('kd-fit:onboarded', false);
+}
+
+function startOnboarding(){
+  onboardState = {
+    step: 0,
+    focus: null,
+    picks: new Set(),
+    weekly: [],
+    monthly: [],
+    goalLabel: '',
+    goalDate: ''
+  };
+  renderOnboarding();
+}
+
+function finishOnboarding(){
+  const picked = [];
+  HABIT_LIBRARY.forEach(group => group.items.forEach(it => {
+    if(onboardState.picks.has(it.id)) picked.push({ id: it.id, label: it.label });
+  }));
+
+  config.daily = picked.length
+    ? [{ id: 'daily', title: 'Every day', items: picked }]
+    : structuredClone(DEFAULT_CONFIG.daily);
+  config.training = onboardState.weekly.filter(t => t.label.trim()).map(t => ({
+    id: newId(), label: t.label.trim(), target: t.target
+  }));
+  config.monthly = onboardState.monthly.filter(t => t.label.trim()).map(t => ({
+    id: newId(), label: t.label.trim(), target: t.target
+  }));
+  config.goal = {
+    label: onboardState.goalLabel.trim(),
+    date: onboardState.goalDate || ''
+  };
+
+  saveConfig();
+  write('kd-fit:onboarded', true);
+  onboardState = null;
+
+  const host = document.getElementById('onboard');
+  if(host){ host.hidden = true; host.innerHTML = ''; }
+  document.body.style.overflow = '';
+
+  applyTheme();
+  today = getDay(dayKey());
+  build();
+  sync();
+  refreshDial();
+  toast('You’re set — tap a habit to log it');
+}
+
+function skipOnboarding(){
+  write('kd-fit:onboarded', true);
+  onboardState = null;
+  const host = document.getElementById('onboard');
+  if(host){ host.hidden = true; host.innerHTML = ''; }
+  document.body.style.overflow = '';
+}
+
+function onboardStepMarkup(){
+  const s = onboardState;
+
+  if(s.step === 0){
+    return `
+      <div class="ob-step">
+        <div class="ob-kicker">Welcome</div>
+        <h1 class="ob-title">What are you trying to do?</h1>
+        <p class="ob-sub">Pick one to start from. You can change everything later.</p>
+        <div class="ob-choices">
+          ${Object.entries(STARTER_PACKS).map(([id, p]) => `
+            <button type="button" class="ob-choice${s.focus === id ? ' is-active' : ''}" data-focus="${id}">
+              ${escapeHtml(p.label)}
+            </button>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  if(s.step === 1){
+    return `
+      <div class="ob-step">
+        <div class="ob-kicker">Every day</div>
+        <h1 class="ob-title">Choose a few daily habits</h1>
+        <p class="ob-sub">
+          Three or four is plenty. <b data-pick-count>${s.picks.size}</b> selected.
+        </p>
+        ${HABIT_LIBRARY.map(group => `
+          <div class="ob-group">
+            <div class="label">${escapeHtml(group.title)}</div>
+            <div class="ob-pills">
+              ${group.items.map(it => `
+                <button type="button" class="ob-pill${s.picks.has(it.id) ? ' is-active' : ''}"
+                        data-pick="${it.id}">${escapeHtml(it.label)}</button>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  if(s.step === 2){
+    const rows = (list, kind, unit, max) => list.map((t, i) => `
+      <div class="field">
+        <input class="input" data-ob-${kind}="${i}" value="${escapeHtml(t.label)}"
+               placeholder="Name it" aria-label="${unit}">
+        <input class="input narrow" data-ob-${kind}-target="${i}" type="number"
+               min="1" max="${max}" value="${t.target}" inputmode="numeric" aria-label="How many times">
+        <button class="remove" type="button" data-ob-del-${kind}="${i}" aria-label="Remove">&times;</button>
+      </div>`).join('');
+
+    return `
+      <div class="ob-step">
+        <div class="ob-kicker">Now and then</div>
+        <h1 class="ob-title">Anything weekly or monthly?</h1>
+        <p class="ob-sub">
+          Targets, not daily boxes — miss a day and nothing breaks. Skip this if
+          you'd rather keep it simple.
+        </p>
+        <div class="ob-group">
+          <div class="sub-head">
+            <div class="label">Times per week</div>
+            <button class="add" type="button" data-ob-add-weekly>+ Add</button>
+          </div>
+          ${rows(s.weekly, 'weekly', 'Activity', 14) || '<div class="group-note">Nothing yet — gym, run, a call home.</div>'}
+        </div>
+        <div class="ob-group">
+          <div class="sub-head">
+            <div class="label">Times per month</div>
+            <button class="add" type="button" data-ob-add-monthly>+ Add</button>
+          </div>
+          ${rows(s.monthly, 'monthly', 'Thing', 31) || '<div class="group-note">Nothing yet — a long walk, a proper day off.</div>'}
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="ob-step">
+      <div class="ob-kicker">Optional</div>
+      <h1 class="ob-title">Working toward anything?</h1>
+      <p class="ob-sub">
+        A race, a birthday, a trip. Set a date and the dial counts down to it —
+        leave it empty and it just shows today.
+      </p>
+      <div class="ob-group">
+        <input class="input" data-ob-goal-label value="${escapeHtml(s.goalLabel)}"
+               placeholder="Name it — optional" aria-label="Goal name">
+        <input class="input" type="date" data-ob-goal-date value="${escapeHtml(s.goalDate)}" aria-label="Goal date">
+      </div>
+      <div class="ob-group">
+        <div class="label">Appearance</div>
+        <div class="seg theme-seg">
+          ${THEMES.map(t => `
+            <button type="button" data-theme-pick="${t}" class="${config.theme === t ? 'is-active' : ''}">
+              ${t[0].toUpperCase() + t.slice(1)}
+            </button>`).join('')}
+        </div>
+        <div class="swatches">
+          ${ACCENTS.map(a => `
+            <button type="button" class="swatch${config.accent === a.id ? ' is-active' : ''}"
+                    data-accent-pick="${a.id}" style="--sw:${a.hex}"
+                    aria-label="${a.label}" aria-pressed="${config.accent === a.id}"></button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderOnboarding(){
+  const host = document.getElementById('onboard');
+  if(!host) return;
+  const s = onboardState;
+  const last = s.step === 3;
+
+  host.hidden = false;
+  document.body.style.overflow = 'hidden';
+  host.innerHTML = `
+    <div class="ob-inner">
+      <div class="ob-progress" aria-hidden="true">
+        ${[0, 1, 2, 3].map(i => `<i class="${i <= s.step ? 'on' : ''}"></i>`).join('')}
+      </div>
+      ${onboardStepMarkup()}
+      <div class="ob-actions">
+        ${s.step > 0 ? '<button class="btn" type="button" data-ob-back>Back</button>' : ''}
+        <button class="btn primary" type="button" data-ob-next>${last ? 'Start' : 'Continue'}</button>
+        ${!last ? '<button class="btn ghost" type="button" data-ob-skip>Skip setup</button>' : ''}
+      </div>
+    </div>`;
+  wireOnboarding(host);
+}
+
+function wireOnboarding(host){
+  const s = onboardState;
+  const q = sel => host.querySelector(sel);
+  const all = sel => Array.from(host.querySelectorAll(sel));
+
+  // Read any inputs on screen back into state before moving.
+  const capture = () => {
+    const gl = q('[data-ob-goal-label]');
+    const gd = q('[data-ob-goal-date]');
+    if(gl) s.goalLabel = gl.value;
+    if(gd) s.goalDate = gd.value;
+    all('[data-ob-weekly]').forEach(i => { s.weekly[+i.dataset.obWeekly].label = i.value; });
+    all('[data-ob-weekly-target]').forEach(i => {
+      const n = parseInt(i.value, 10);
+      if(n >= 1) s.weekly[+i.dataset.obWeeklyTarget].target = Math.min(n, 14);
+    });
+    all('[data-ob-monthly]').forEach(i => { s.monthly[+i.dataset.obMonthly].label = i.value; });
+    all('[data-ob-monthly-target]').forEach(i => {
+      const n = parseInt(i.value, 10);
+      if(n >= 1) s.monthly[+i.dataset.obMonthlyTarget].target = Math.min(n, 31);
+    });
+  };
+
+  all('[data-focus]').forEach(b => b.addEventListener('click', () => {
+    s.focus = b.dataset.focus;
+    // Seed the picks so step two opens with a sensible answer already
+    // in place rather than an empty list to stare at.
+    s.picks = new Set(STARTER_PACKS[s.focus].picks);
+    all('[data-focus]').forEach(x => x.classList.toggle('is-active', x === b));
+    tap('light');
+  }));
+
+  all('[data-pick]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.pick;
+    if(s.picks.has(id)) s.picks.delete(id); else s.picks.add(id);
+    b.classList.toggle('is-active', s.picks.has(id));
+    const count = q('[data-pick-count]');
+    if(count) count.textContent = s.picks.size;
+    tap('light');
+  }));
+
+  const addWeekly = q('[data-ob-add-weekly]');
+  if(addWeekly) addWeekly.addEventListener('click', () => {
+    capture(); s.weekly.push({ label: '', target: 2 }); renderOnboarding();
+  });
+  const addMonthly = q('[data-ob-add-monthly]');
+  if(addMonthly) addMonthly.addEventListener('click', () => {
+    capture(); s.monthly.push({ label: '', target: 1 }); renderOnboarding();
+  });
+  all('[data-ob-del-weekly]').forEach(b => b.addEventListener('click', () => {
+    capture(); s.weekly.splice(+b.dataset.obDelWeekly, 1); renderOnboarding();
+  }));
+  all('[data-ob-del-monthly]').forEach(b => b.addEventListener('click', () => {
+    capture(); s.monthly.splice(+b.dataset.obDelMonthly, 1); renderOnboarding();
+  }));
+
+  all('[data-theme-pick]').forEach(b => b.addEventListener('click', () => {
+    config.theme = b.dataset.themePick;
+    saveConfig(); applyTheme();
+    all('[data-theme-pick]').forEach(x => x.classList.toggle('is-active', x === b));
+  }));
+  all('[data-accent-pick]').forEach(b => b.addEventListener('click', () => {
+    config.accent = b.dataset.accentPick;
+    saveConfig(); applyTheme();
+    all('[data-accent-pick]').forEach(x => x.classList.toggle('is-active', x === b));
+  }));
+
+  const back = q('[data-ob-back]');
+  if(back) back.addEventListener('click', () => { capture(); s.step--; renderOnboarding(); });
+  const skip = q('[data-ob-skip]');
+  if(skip) skip.addEventListener('click', skipOnboarding);
+
+  q('[data-ob-next]').addEventListener('click', () => {
+    capture();
+    if(s.step === 1 && !s.picks.size){
+      toast('Pick at least one habit');
+      return;
+    }
+    if(s.step >= 3){ finishOnboarding(); return; }
+    s.step++;
+    renderOnboarding();
+    host.scrollTop = 0;
+  });
 }
 
 /* ---------- backup ---------- */
@@ -1283,17 +2005,20 @@ function checkRollover(){
   sync();
   el.note.value = getNote(mountedOn);
   autoGrow(el.note);
-  countUp(el.days, daysUntilBirthday());
+  refreshDial();
 }
 document.addEventListener('visibilitychange', () => { if(!document.hidden) checkRollover(); });
 
 /* ---------- boot ---------- */
 migrate();
 config = loadConfig(); // migrate may have rewritten it
+applyTheme();
+requestPersistence();
 today = getDay(dayKey());
 build();
 sync();
-countUp(el.days, daysUntilBirthday());
+refreshDial();
+if(needsOnboarding()) startOnboarding();
 
 // Hold the splash briefly so it reads as an intro rather than a flash,
 // but never let it outstay the content being ready.

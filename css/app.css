@@ -17,19 +17,44 @@
   unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
+/* ============================================================
+   Theme
+
+   Three axes, set independently on <html>:
+     data-theme   dark | light      the surface palette
+     data-accent  blue | …          the one colour that carries meaning
+     (no attribute)                 defaults to dark / blue
+
+   Every colour below resolves through a token, and the two that get
+   mixed with alpha carry an -rgb triplet alongside, so a theme only
+   ever has to restate the triplet — never hunt down an rgba() call.
+   ============================================================ */
 :root{
-  --kd-blue:#0339f8;
-  --kd-blue-deep:#01145a;
   --kd-ink:#0a0b0e;
   --kd-paper-white:#f4f4f6;
   --kd-error:#c62f2f;
+  --kd-warm:#ff7a59;
 
+  /* dark is the default, so it lives on the bare :root — a page with
+     no data-theme still paints correctly before any script runs */
   --kd-bg:#08090b;
   --kd-text:#eceef2;
+  --kd-text-rgb:236 238 242;
   --kd-muted:#8f939d;
-  --kd-line:rgba(236,238,242,0.13);
+  --kd-line:rgb(var(--kd-text-rgb) / 0.13);
   --kd-surface:#101216;
   --kd-surface-2:#16181d;
+  --kd-instrument:var(--kd-paper-white);
+  --kd-on-accent:#fff;
+  --kd-sky:#0a0f22;
+  --kd-shadow:none;
+  /* Strength of the three ambient washes. On glass they carry the
+     whole mood; on paper the same values read as a stain, so light
+     restates them far lower rather than turning the art off. */
+  --kd-wash-1:0.30;
+  --kd-wash-2:0.55;
+  --kd-wash-3:0.10;
+  --kd-grain:0.05;
 
   --kd-font:'Instrument Sans','Helvetica Neue',Arial,sans-serif;
   --kd-fs-label:0.72rem;
@@ -48,6 +73,67 @@
   --kd-t-reveal:0.9s;
 
   --kd-pad:clamp(1.25rem,5vw,2.5rem);
+}
+
+/* ---------- light ----------
+   Not the dark palette inverted. Paper needs less contrast than glass
+   to read as calm, so the surfaces sit close to the background and the
+   line does the separating. Muted darkens well past a simple flip so
+   it clears 4.5:1 on the card surface. */
+:root[data-theme="light"]{
+  --kd-bg:#f7f7f9;
+  --kd-text:#14161b;
+  --kd-text-rgb:20 22 27;
+  --kd-muted:#5c6069;
+  --kd-line:rgb(var(--kd-text-rgb) / 0.12);
+  --kd-surface:#ffffff;
+  --kd-surface-2:#f1f2f5;
+  --kd-instrument:#2a2d34;
+  --kd-sky:#e7ecfb;
+  --kd-shadow:0 1px 2px rgb(var(--kd-text-rgb) / 0.05),0 8px 24px rgb(var(--kd-text-rgb) / 0.05);
+  --kd-wash-1:0.07;
+  --kd-wash-2:0.05;
+  --kd-wash-3:0.04;
+  --kd-grain:0.025;
+}
+
+/* ---------- accents ----------
+   Six, each given a deep partner for the ambient wash. They are picked
+   to hold their own against both palettes — nothing so pale it vanishes
+   on paper, nothing so dark it disappears on glass. */
+:root{
+  --kd-accent:#0339f8;
+  --kd-accent-rgb:3 57 248;
+  --kd-accent-deep:#01145a;
+  --kd-accent-deep-rgb:1 20 90;
+}
+:root[data-accent="violet"]{
+  --kd-accent:#7c3aed;   --kd-accent-rgb:124 58 237;
+  --kd-accent-deep:#2e1065; --kd-accent-deep-rgb:46 16 101;
+}
+:root[data-accent="rose"]{
+  --kd-accent:#e11d63;   --kd-accent-rgb:225 29 99;
+  --kd-accent-deep:#500724; --kd-accent-deep-rgb:80 7 36;
+}
+:root[data-accent="amber"]{
+  --kd-accent:#d97706;   --kd-accent-rgb:217 119 6;
+  --kd-accent-deep:#451a03; --kd-accent-deep-rgb:69 26 3;
+}
+:root[data-accent="green"]{
+  --kd-accent:#059669;   --kd-accent-rgb:5 150 105;
+  --kd-accent-deep:#022c22; --kd-accent-deep-rgb:2 44 34;
+}
+:root[data-accent="teal"]{
+  --kd-accent:#0891b2;   --kd-accent-rgb:8 145 178;
+  --kd-accent-deep:#083344; --kd-accent-deep-rgb:8 51 68;
+}
+
+/* A colour change should feel like a change of light, not a repaint. */
+:root[data-theme-ready] body,
+:root[data-theme-ready] .card,
+:root[data-theme-ready] .ambient{
+  transition:background-color var(--kd-t-reveal) var(--kd-ease),
+             color var(--kd-t-reveal) var(--kd-ease);
 }
 
 *,*::before,*::after{box-sizing:border-box;}
@@ -77,7 +163,7 @@ body{
     calc(3rem + env(safe-area-inset-bottom))
     calc(var(--kd-pad) + env(safe-area-inset-left));
 }
-::selection{background:var(--kd-blue);color:#fff;}
+::selection{background:var(--kd-accent);color:var(--kd-on-accent);}
 
 /* ---------- ambient art ---------- */
 .ambient{
@@ -86,17 +172,17 @@ body{
   z-index:0;
   pointer-events:none;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -8%, rgba(3,57,248,0.30), transparent 62%),
-    radial-gradient(ellipse 60% 40% at 88% 12%, rgba(1,20,90,0.55), transparent 70%),
-    radial-gradient(ellipse 90% 55% at 10% 104%, rgba(3,57,248,0.10), transparent 68%),
-    linear-gradient(180deg,#0a0f22 0%,var(--kd-bg) 46%);
+    radial-gradient(ellipse 80% 50% at 50% -8%, rgb(var(--kd-accent-rgb) / var(--kd-wash-1)), transparent 62%),
+    radial-gradient(ellipse 60% 40% at 88% 12%, rgb(var(--kd-accent-deep-rgb) / var(--kd-wash-2)), transparent 70%),
+    radial-gradient(ellipse 90% 55% at 10% 104%, rgb(var(--kd-accent-rgb) / var(--kd-wash-3)), transparent 68%),
+    linear-gradient(180deg,var(--kd-sky) 0%,var(--kd-bg) 46%);
   transition:opacity 1.2s var(--kd-ease);
 }
 .ambient::after{
   content:'';
   position:absolute;
   inset:0;
-  opacity:0.05;
+  opacity:var(--kd-grain);
   mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -167,7 +253,7 @@ body.is-complete .ambient{opacity:1.35;}
 .dial-track{fill:none;stroke:var(--kd-line);stroke-width:2;}
 .dial-prog{
   fill:none;
-  stroke:var(--kd-blue);
+  stroke:var(--kd-accent);
   stroke-width:5;
   stroke-linecap:round;
   transition:stroke-dashoffset 0.75s var(--kd-ease);
@@ -179,10 +265,10 @@ body.is-complete .ambient{opacity:1.35;}
   opacity:0.75;
   transition:stroke var(--kd-t-fast) var(--kd-ease);
 }
-body.is-complete .dial-target{stroke:var(--kd-blue);}
+body.is-complete .dial-target{stroke:var(--kd-accent);}
 .dial-glow{
   fill:none;
-  stroke:var(--kd-blue);
+  stroke:var(--kd-accent);
   stroke-width:9;
   stroke-linecap:round;
   filter:blur(9px);
@@ -213,14 +299,14 @@ body.is-complete .dial-target{stroke:var(--kd-blue);}
   width:100%;
   height:100%;
   overflow:visible;
-  filter:drop-shadow(0 10px 26px rgba(3,57,248,0.5));
+  filter:drop-shadow(0 10px 26px rgb(var(--kd-accent-rgb) / 0.5));
 }
 .dial.show-seal .dial-face{opacity:0;transform:scale(0.9);filter:blur(4px);}
 .dial.show-seal .dial-seal{opacity:1;transform:scale(1);filter:blur(0);}
 body.is-complete .dial{cursor:pointer;}
 .dial-num{font-size:clamp(4.25rem,19vw,5.75rem);font-weight:500;line-height:0.92;}
 .dial-unit{font-size:1.05rem;font-weight:500;letter-spacing:-0.01em;}
-.dial-unit em{font-style:normal;color:var(--kd-blue);}
+.dial-unit em{font-style:normal;color:var(--kd-accent);}
 .dial-date{
   font-size:var(--kd-fs-tag);
   letter-spacing:var(--kd-track-label);
@@ -237,7 +323,7 @@ body.is-complete .dial{cursor:pointer;}
   color:var(--kd-muted);
   transition:color var(--kd-t-fast) ease;
 }
-body.is-complete .dial-status{color:var(--kd-blue);}
+body.is-complete .dial-status{color:var(--kd-accent);}
 body.is-complete .dial-glow{opacity:0.85;}
 
 /* ---------- stats ---------- */
@@ -301,9 +387,9 @@ body.is-complete .dial-glow{opacity:0.85;}
   background:var(--kd-surface-2);
   transition:height 0.5s var(--kd-ease),background var(--kd-t-fast) var(--kd-ease);
 }
-.tally.partial{background:rgba(3,57,248,0.38);}
-.tally.full{background:var(--kd-blue);}
-.tally.today{box-shadow:0 0 0 1.5px var(--kd-bg),0 0 0 3px var(--kd-blue);}
+.tally.partial{background:rgb(var(--kd-accent-rgb) / 0.38);}
+.tally.full{background:var(--kd-accent);}
+.tally.today{box-shadow:0 0 0 1.5px var(--kd-bg),0 0 0 3px var(--kd-accent);}
 
 /* year grid — weeks as columns, scrolled to today */
 .year-wrap{overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:0.4rem;}
@@ -315,11 +401,11 @@ body.is-complete .dial-glow{opacity:0.85;}
   border-radius:2px;
   background:var(--kd-surface-2);
 }
-.ycell.l1{background:rgba(3,57,248,0.25);}
-.ycell.l2{background:rgba(3,57,248,0.5);}
-.ycell.l3{background:rgba(3,57,248,0.75);}
-.ycell.l4{background:var(--kd-blue);}
-.ycell.today{box-shadow:0 0 0 1.5px var(--kd-bg),0 0 0 3px var(--kd-blue);}
+.ycell.l1{background:rgb(var(--kd-accent-rgb) / 0.25);}
+.ycell.l2{background:rgb(var(--kd-accent-rgb) / 0.5);}
+.ycell.l3{background:rgb(var(--kd-accent-rgb) / 0.75);}
+.ycell.l4{background:var(--kd-accent);}
+.ycell.today{box-shadow:0 0 0 1.5px var(--kd-bg),0 0 0 3px var(--kd-accent);}
 .ycell.void{background:transparent;}
 .year-months{
   display:flex;
@@ -335,10 +421,11 @@ body.is-complete .dial-glow{opacity:0.85;}
 /* ---------- cards ---------- */
 .card{
   background:
-    linear-gradient(180deg,rgba(236,238,242,0.028),transparent 45%),
+    linear-gradient(180deg,rgb(var(--kd-text-rgb) / 0.028),transparent 45%),
     var(--kd-surface);
   border:1px solid var(--kd-line);
   border-radius:var(--kd-radius);
+  box-shadow:var(--kd-shadow);
   padding:1.35rem 1.35rem 0.5rem;
   margin-bottom:1rem;
   overflow:hidden;
@@ -376,22 +463,22 @@ body.is-complete .dial-glow{opacity:0.85;}
    see once it's lit looks broken rather than restrained. */
 .g .seg{
   fill:none;
-  stroke:rgba(236,238,242,0.12);
+  stroke:rgb(var(--kd-text-rgb) / 0.12);
   stroke-width:5;
   stroke-linecap:round;
   transition:stroke var(--kd-t-fast) var(--kd-ease),opacity var(--kd-t-fast) var(--kd-ease);
 }
 .g .seg.on{
-  stroke:var(--kd-blue);
-  filter:drop-shadow(0 0 5px rgba(3,57,248,0.7));
+  stroke:var(--kd-accent);
+  filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / 0.7));
 }
 /* Animates opacity and glow rather than stroke-width, so the variants
    keep their own weights (rings 2.4, clock 8) while it plays. */
 .g .seg.pop{animation:seg-pop 0.5s var(--kd-ease);}
 @keyframes seg-pop{
   0%{opacity:0.3;filter:none;}
-  35%{opacity:1;filter:drop-shadow(0 0 11px rgba(3,57,248,1));}
-  100%{opacity:1;filter:drop-shadow(0 0 5px rgba(3,57,248,0.7));}
+  35%{opacity:1;filter:drop-shadow(0 0 11px rgb(var(--kd-accent-rgb) / 1));}
+  100%{opacity:1;filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / 0.7));}
 }
 
 /* needle: the part that reads as a real instrument */
@@ -401,20 +488,20 @@ body.is-complete .dial-glow{opacity:0.85;}
   transition:transform 0.75s var(--kd-ease);
 }
 .g .needle line{
-  stroke:var(--kd-paper-white);
+  stroke:var(--kd-instrument);
   stroke-width:2.6;
   stroke-linecap:round;
 }
-.g .hub{fill:var(--kd-paper-white);}
+.g .hub{fill:var(--kd-instrument);}
 .g-heat .needle line{
-  stroke:var(--needle,#ff7a59);
+  stroke:var(--needle,var(--kd-warm));
   filter:drop-shadow(0 0 5px currentColor);
   transition:stroke var(--kd-t-move) var(--kd-ease);
 }
-.g-heat .hub{fill:var(--needle,#ff7a59);transition:fill var(--kd-t-move) var(--kd-ease);}
+.g-heat .hub{fill:var(--needle,var(--kd-warm));transition:fill var(--kd-t-move) var(--kd-ease);}
 .g-heat .heat-track{fill:none;stroke-width:6;stroke-linecap:round;opacity:0.65;}
 .g-heat .tick{
-  stroke:rgba(236,238,242,0.18);
+  stroke:rgb(var(--kd-text-rgb) / 0.18);
   stroke-width:2;
   stroke-linecap:round;
   transition:stroke var(--kd-t-fast) var(--kd-ease);
@@ -423,15 +510,15 @@ body.is-complete .dial-glow{opacity:0.85;}
 
 .g-ladder .seg{stroke-width:3;}
 .g-rings .seg{stroke-width:3.4;}
-.g-rings .core{fill:rgba(236,238,242,0.12);transition:fill var(--kd-t-fast) var(--kd-ease);}
+.g-rings .core{fill:rgb(var(--kd-text-rgb) / 0.12);transition:fill var(--kd-t-fast) var(--kd-ease);}
 .g-clock .seg{stroke-width:11;stroke-linecap:butt;}
 
 /* completing a section locks the instrument — it should be obvious
    from across the room which sections are shut */
-.g.full .seg.on{filter:drop-shadow(0 0 9px rgba(3,57,248,0.95));}
-.g-rings.full .core{fill:var(--kd-blue);}
-.g.full .needle line{stroke:var(--kd-blue);}
-.g.full .hub{fill:var(--kd-blue);}
+.g.full .seg.on{filter:drop-shadow(0 0 9px rgb(var(--kd-accent-rgb) / 0.95));}
+.g-rings.full .core{fill:var(--kd-accent);}
+.g.full .needle line{stroke:var(--kd-accent);}
+.g.full .hub{fill:var(--kd-accent);}
 .g-heat.full .heat-track{opacity:0.9;}
 .g.full{animation:g-lock 0.62s var(--kd-ease);}
 @keyframes g-lock{
@@ -468,7 +555,7 @@ body.is-complete .dial-glow{opacity:0.85;}
 }
 .box svg{width:13px;height:13px;display:block;}
 .box path{
-  stroke:var(--kd-paper-white);
+  stroke:var(--kd-instrument);
   stroke-width:2.2;
   stroke-linecap:round;
   stroke-linejoin:round;
@@ -477,7 +564,7 @@ body.is-complete .dial-glow{opacity:0.85;}
   stroke-dashoffset:16;
   transition:stroke-dashoffset 0.32s var(--kd-ease);
 }
-.item.done .box,.train.done .box{background:var(--kd-blue);border-color:var(--kd-blue);}
+.item.done .box,.train.done .box{background:var(--kd-accent);border-color:var(--kd-accent);}
 .item.done .box path,.train.done .box path{stroke-dashoffset:0;}
 .item.just-done .box,.train.just-done .box{animation:kd-press 0.4s var(--kd-ease);}
 @keyframes kd-press{
@@ -506,7 +593,7 @@ body.is-complete .dial-glow{opacity:0.85;}
 .train-body{flex:1;min-width:0;}
 .train-label{font-size:0.97rem;line-height:1.35;}
 .train-sub{font-size:var(--kd-fs-tag);color:var(--kd-muted);letter-spacing:0.04em;margin-top:0.05rem;}
-.train.hit .train-sub{color:var(--kd-blue);}
+.train.hit .train-sub{color:var(--kd-accent);}
 .pips{display:flex;gap:4px;flex:none;}
 .pip{
   width:7px;height:7px;
@@ -515,7 +602,7 @@ body.is-complete .dial-glow{opacity:0.85;}
   border:1px solid var(--kd-line);
   transition:background var(--kd-t-fast) var(--kd-ease),border-color var(--kd-t-fast) var(--kd-ease);
 }
-.pip.on{background:var(--kd-blue);border-color:var(--kd-blue);}
+.pip.on{background:var(--kd-accent);border-color:var(--kd-accent);}
 
 /* ---------- note ---------- */
 .note-field{
@@ -565,11 +652,126 @@ body.is-complete .dial-glow{opacity:0.85;}
 }
 .btn:hover{border-color:var(--kd-muted);}
 .btn:active{opacity:0.7;}
-.btn.is-on{border-color:var(--kd-blue);color:var(--kd-blue);}
-.btn.primary{background:var(--kd-blue);border-color:var(--kd-blue);color:#fff;}
+.btn.is-on{border-color:var(--kd-accent);color:var(--kd-accent);}
+.btn.primary{background:var(--kd-accent);border-color:var(--kd-accent);color:var(--kd-on-accent);}
 .btn.danger{color:var(--kd-error);border-color:rgba(198,47,47,0.4);}
 .btn:disabled{opacity:0.35;pointer-events:none;}
 .btn.block{width:100%;display:block;padding:0.85rem 1.2rem;}
+.btn.ghost{border-color:transparent;color:var(--kd-muted);}
+.btn.ghost:hover{color:var(--kd-text);border-color:transparent;}
+
+/* ============================================================
+   Onboarding
+
+   Full-screen, above everything, and escapable at every step. It sits
+   on the plain background rather than a card so the first thing the
+   app does isn't shouting.
+   ============================================================ */
+.onboard{
+  position:fixed;
+  inset:0;
+  z-index:60;
+  background:var(--kd-bg);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  animation:sheet-in 0.5s var(--kd-ease) both;
+}
+.onboard[hidden]{display:none;}
+.ob-inner{
+  max-width:520px;
+  margin:0 auto;
+  min-height:100%;
+  display:flex;
+  flex-direction:column;
+  padding:
+    calc(2rem + env(safe-area-inset-top))
+    calc(var(--kd-pad) + env(safe-area-inset-right))
+    calc(2rem + env(safe-area-inset-bottom))
+    calc(var(--kd-pad) + env(safe-area-inset-left));
+}
+.ob-progress{display:flex;gap:0.35rem;margin-bottom:2.5rem;}
+.ob-progress i{
+  height:3px;
+  flex:1;
+  border-radius:3px;
+  background:var(--kd-line);
+  transition:background var(--kd-t-move) var(--kd-ease);
+}
+.ob-progress i.on{background:var(--kd-accent);}
+.ob-step{flex:1;}
+.ob-kicker{
+  font-size:var(--kd-fs-tag);
+  font-weight:600;
+  letter-spacing:var(--kd-track-label);
+  text-transform:uppercase;
+  color:var(--kd-accent);
+  margin-bottom:0.7rem;
+}
+.ob-title{
+  font-size:clamp(1.6rem,7vw,2.1rem);
+  font-weight:600;
+  letter-spacing:var(--kd-track-display);
+  line-height:1.15;
+  margin:0 0 0.7rem;
+}
+.ob-sub{color:var(--kd-muted);font-size:0.94rem;line-height:1.6;margin:0 0 2rem;}
+.ob-sub b{color:var(--kd-text);font-variant-numeric:tabular-nums;}
+.ob-group{margin-bottom:1.9rem;}
+.ob-group > .label{margin-bottom:0.7rem;}
+.ob-group .input{margin-bottom:0.6rem;}
+
+.ob-choices{display:grid;gap:0.6rem;}
+.ob-choice{
+  width:100%;
+  text-align:left;
+  padding:1.05rem 1.2rem;
+  border-radius:var(--kd-radius-sm);
+  border:1px solid var(--kd-line);
+  background:var(--kd-surface);
+  color:var(--kd-text);
+  font-family:inherit;
+  font-size:1rem;
+  font-weight:500;
+  cursor:pointer;
+  transition:border-color var(--kd-t-fast) var(--kd-ease),background var(--kd-t-fast) var(--kd-ease);
+}
+.ob-choice:hover{border-color:var(--kd-muted);}
+.ob-choice.is-active{
+  border-color:var(--kd-accent);
+  background:rgb(var(--kd-accent-rgb) / 0.08);
+}
+
+.ob-pills{display:flex;flex-wrap:wrap;gap:0.45rem;}
+.ob-pill{
+  padding:0.55rem 0.9rem;
+  border-radius:var(--kd-pill);
+  border:1px solid var(--kd-line);
+  background:transparent;
+  color:var(--kd-muted);
+  font-family:inherit;
+  font-size:0.82rem;
+  font-weight:500;
+  cursor:pointer;
+  text-align:left;
+  transition:border-color var(--kd-t-fast) var(--kd-ease),color var(--kd-t-fast) var(--kd-ease),background var(--kd-t-fast) var(--kd-ease);
+}
+.ob-pill:hover{color:var(--kd-text);border-color:var(--kd-muted);}
+.ob-pill.is-active{
+  border-color:var(--kd-accent);
+  background:var(--kd-accent);
+  color:var(--kd-on-accent);
+}
+
+.ob-actions{
+  display:flex;
+  align-items:center;
+  gap:0.6rem;
+  flex-wrap:wrap;
+  padding-top:1.75rem;
+  margin-top:auto;
+  border-top:1px solid var(--kd-line);
+}
+.ob-actions .btn.primary{flex:1;padding:0.85rem 1.2rem;}
 
 /* ---------- footer ---------- */
 .footer{
@@ -581,7 +783,7 @@ body.is-complete .dial-glow{opacity:0.85;}
 .footer .label{letter-spacing:0.16em;}
 .footer svg{width:16px;height:auto;margin-bottom:0.85rem;opacity:0.55;}
 
-:focus-visible{outline:3px solid var(--kd-blue);outline-offset:3px;border-radius:6px;}
+:focus-visible{outline:3px solid var(--kd-accent);outline-offset:3px;border-radius:6px;}
 
 /* ============================================================
    Settings sheet
@@ -616,6 +818,66 @@ body.is-complete .dial-glow{opacity:0.85;}
 .sheet-title{font-size:1.35rem;font-weight:600;letter-spacing:var(--kd-track-display);}
 .group{margin-bottom:2.25rem;}
 .group > .label{margin-bottom:0.85rem;}
+
+/* ---------- appearance pickers ---------- */
+.theme-seg{margin-bottom:0.9rem;}
+.theme-seg button{flex:1;text-align:center;}
+.swatches{display:flex;gap:0.55rem;flex-wrap:wrap;}
+.swatch{
+  width:34px;height:34px;
+  flex:none;
+  border-radius:50%;
+  border:2px solid transparent;
+  background:var(--sw);
+  cursor:pointer;
+  padding:0;
+  position:relative;
+  transition:transform var(--kd-t-fast) var(--kd-ease),box-shadow var(--kd-t-fast) var(--kd-ease);
+}
+.swatch:hover{transform:scale(1.08);}
+/* The ring sits outside the colour so it reads on any of the six. */
+.swatch.is-active{
+  box-shadow:0 0 0 2px var(--kd-bg),0 0 0 4px var(--kd-text);
+}
+.swatch:focus-visible{outline:2px solid var(--kd-text);outline-offset:3px;}
+
+/* ---------- day-of-week chips ---------- */
+.field-group{margin-bottom:0.85rem;}
+.field-group .field{margin-bottom:0.4rem;}
+.days{display:flex;align-items:center;gap:0.28rem;flex-wrap:wrap;padding-left:0.1rem;}
+.day{
+  width:26px;height:26px;
+  flex:none;
+  border-radius:50%;
+  border:1px solid var(--kd-line);
+  background:transparent;
+  color:var(--kd-muted);
+  font-family:inherit;
+  font-size:0.66rem;
+  font-weight:600;
+  cursor:pointer;
+  padding:0;
+  transition:background var(--kd-t-fast) var(--kd-ease),color var(--kd-t-fast) var(--kd-ease),border-color var(--kd-t-fast) var(--kd-ease);
+}
+.day:hover{border-color:var(--kd-muted);color:var(--kd-text);}
+.day.on{
+  background:var(--kd-accent);
+  border-color:var(--kd-accent);
+  color:var(--kd-on-accent);
+}
+.day:focus-visible{outline:2px solid var(--kd-text);outline-offset:2px;}
+.days-note{
+  font-size:var(--kd-fs-tag);
+  color:var(--kd-muted);
+  margin-left:0.45rem;
+  letter-spacing:0.02em;
+}
+/* Shown on a card when some of its habits aren't scheduled today. */
+.card-aside{
+  font-size:var(--kd-fs-tag);
+  color:var(--kd-muted);
+  padding:0.15rem 0 0.9rem;
+}
 .group-note{font-size:var(--kd-fs-tag);color:var(--kd-muted);line-height:1.6;margin-top:0.7rem;}
 .group-note code{
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -646,7 +908,7 @@ body.is-complete .dial-glow{opacity:0.85;}
   padding:0.55rem 0.8rem;
   transition:border-color var(--kd-t-fast) var(--kd-ease);
 }
-.input:focus{outline:none;border-color:var(--kd-blue);}
+.input:focus{outline:none;border-color:var(--kd-accent);}
 .input.narrow{flex:none;width:64px;text-align:center;}
 .input[type="date"]{width:100%;}
 textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8rem;}
@@ -686,7 +948,7 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
   padding:0.2rem 0;
   transition:color var(--kd-t-fast) var(--kd-ease);
 }
-.add:hover{color:var(--kd-blue);}
+.add:hover{color:var(--kd-accent);}
 .row-btns{display:flex;gap:0.6rem;flex-wrap:wrap;}
 .row-btns .btn{flex:1;min-width:120px;text-align:center;}
 .toast{

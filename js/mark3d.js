@@ -12,11 +12,36 @@
 (function (global) {
   'use strict';
 
+  /* The two halves take their colour from the live theme rather than
+     from constants, so the seal matches whichever accent and palette
+     is in force. Flat shading needs real channel values, so the tokens
+     are read once per build and parsed to an [r,g,b] triple. */
+  function readToken(name, fallback){
+    try{
+      const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      if(!raw) return fallback;
+      if(raw[0] === '#'){
+        const h = raw.length === 4
+          ? raw.slice(1).split('').map(c => c + c).join('')
+          : raw.slice(1);
+        const n = parseInt(h, 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+      }
+      const m = raw.match(/-?\d+(\.\d+)?/g);
+      if(m && m.length >= 3) return m.slice(0, 3).map(v => Math.round(+v));
+    }catch(e){ /* fall through */ }
+    return fallback;
+  }
+
   // The mark, in its own 18.62 x 11.73 space (see kd-design-system).
-  const SHAPES = [
-    { colour: [0x03, 0x39, 0xf8], pts: [[18.62,0],[12,0],[6,5.86],[12,11.73],[18.62,11.73],[12.62,5.86]] },
-    { colour: [0xec, 0xee, 0xf2], pts: [[0,0],[0,11.72],[6,5.86]] }
-  ];
+  function shapes(){
+    return [
+      { colour: readToken('--kd-accent', [0x03, 0x39, 0xf8]),
+        pts: [[18.62,0],[12,0],[6,5.86],[12,11.73],[18.62,11.73],[12.62,5.86]] },
+      { colour: readToken('--kd-text', [0xec, 0xee, 0xf2]),
+        pts: [[0,0],[0,11.72],[6,5.86]] }
+    ];
+  }
 
   const CX = 9.31, CY = 5.865;   // centre of the mark
   const SCALE = 5.6;             // into viewBox units
@@ -48,7 +73,7 @@
   // Build the solid once: every face as a list of model-space vertices.
   function buildFaces(){
     const faces = [];
-    SHAPES.forEach(shape => {
+    shapes().forEach(shape => {
       // y is flipped — the mark is authored in SVG's y-down space.
       let front = shape.pts.map(([x, y]) =>
         [(x - CX) * SCALE, -(y - CY) * SCALE, DEPTH / 2]);
