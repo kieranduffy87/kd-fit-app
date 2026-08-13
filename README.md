@@ -1,4 +1,6 @@
-# 40 — KD Performance Log
+# Jotara
+
+A daily log for the habits you are actually keeping.
 
 A daily discipline tracker counting down to your 40th (7 May 2027), built in the KD design system (Night Studio theme, Electric Blue, Instrument Sans).
 

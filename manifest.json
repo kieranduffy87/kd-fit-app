@@ -1,7 +1,7 @@
 {
-  "name": "40 — KD Performance Log",
-  "short_name": "40",
-  "description": "Daily discipline log counting down to 40. Built to perform.",
+  "name": "Jotara",
+  "short_name": "Jotara",
+  "description": "A daily log for the habits you are actually keeping.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

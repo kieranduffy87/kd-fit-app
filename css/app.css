@@ -1,5 +1,5 @@
 /* ============================================================
-   40 — KD Performance Log
+   Jotara — a daily habit log
    Built on kd-design-system v1.0. Tokens mirror css/tokens.css
    (Night Studio); motion uses the house curve and the
    rise-and-unblur primitive.
@@ -48,6 +48,13 @@
   --kd-on-accent:#fff;
   --kd-sky:#0a0f22;
   --kd-shadow:none;
+  /* The unlit state of every instrument — gauge segments, the dial
+     track, empty tally bars. On glass a whisper of the text colour is
+     enough; on paper the same value disappears, so light restates it. */
+  --kd-track:rgb(var(--kd-text-rgb) / 0.12);
+  /* Accent bloom. Glow is a dark-room effect; on paper it reads as
+     smudge, so light turns it almost all the way down. */
+  --kd-glow:0.7;
   /* Strength of the three ambient washes. On glass they carry the
      whole mood; on paper the same values read as a stain, so light
      restates them far lower rather than turning the art off. */
@@ -81,16 +88,23 @@
    line does the separating. Muted darkens well past a simple flip so
    it clears 4.5:1 on the card surface. */
 :root[data-theme="light"]{
-  --kd-bg:#f7f7f9;
+  /* The page is a shade deeper than the cards, not the same white, so
+     a card is an object sitting on a surface rather than an outline
+     drawn on the void. That separation is what light mode was missing. */
+  --kd-bg:#eceef3;
   --kd-text:#14161b;
   --kd-text-rgb:20 22 27;
-  --kd-muted:#5c6069;
-  --kd-line:rgb(var(--kd-text-rgb) / 0.12);
+  --kd-muted:#565a63;
+  --kd-line:rgb(var(--kd-text-rgb) / 0.14);
   --kd-surface:#ffffff;
-  --kd-surface-2:#f1f2f5;
+  /* Well clear of the background — this is the empty state of every
+     bar and gauge, and at 2% away it read as nothing at all. */
+  --kd-surface-2:#dbdfe7;
+  --kd-track:rgb(var(--kd-text-rgb) / 0.16);
+  --kd-glow:0.18;
   --kd-instrument:#2a2d34;
-  --kd-sky:#e7ecfb;
-  --kd-shadow:0 1px 2px rgb(var(--kd-text-rgb) / 0.05),0 8px 24px rgb(var(--kd-text-rgb) / 0.05);
+  --kd-sky:#dfe6fa;
+  --kd-shadow:0 1px 2px rgb(var(--kd-text-rgb) / 0.06),0 10px 28px rgb(var(--kd-text-rgb) / 0.08);
   --kd-wash-1:0.07;
   --kd-wash-2:0.05;
   --kd-wash-3:0.04;
@@ -222,7 +236,6 @@ body.is-complete .ambient{opacity:1.35;}
   padding:0;
   transition:color var(--kd-t-fast) var(--kd-ease),border-color var(--kd-t-fast) var(--kd-ease),transform var(--kd-t-move) var(--kd-ease);
 }
-.icon-btn:hover{color:var(--kd-text);border-color:var(--kd-muted);}
 .icon-btn:active{transform:scale(0.94);}
 .icon-btn svg{width:15px;height:15px;display:block;}
 
@@ -250,7 +263,7 @@ body.is-complete .ambient{opacity:1.35;}
   transform:rotate(-90deg);
   overflow:visible;
 }
-.dial-track{fill:none;stroke:var(--kd-line);stroke-width:2;}
+.dial-track{fill:none;stroke:var(--kd-track);stroke-width:2;}
 .dial-prog{
   fill:none;
   stroke:var(--kd-accent);
@@ -272,7 +285,7 @@ body.is-complete .dial-target{stroke:var(--kd-accent);}
   stroke-width:9;
   stroke-linecap:round;
   filter:blur(9px);
-  opacity:0.5;
+  opacity:calc(var(--kd-glow) * 0.71);
   transition:stroke-dashoffset 0.75s var(--kd-ease),opacity var(--kd-t-move) var(--kd-ease);
 }
 .dial-face{
@@ -299,7 +312,7 @@ body.is-complete .dial-target{stroke:var(--kd-accent);}
   width:100%;
   height:100%;
   overflow:visible;
-  filter:drop-shadow(0 10px 26px rgb(var(--kd-accent-rgb) / 0.5));
+  filter:drop-shadow(0 10px 26px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 0.71)));
 }
 .dial.show-seal .dial-face{opacity:0;transform:scale(0.9);filter:blur(4px);}
 .dial.show-seal .dial-seal{opacity:1;transform:scale(1);filter:blur(0);}
@@ -324,7 +337,7 @@ body.is-complete .dial{cursor:pointer;}
   transition:color var(--kd-t-fast) ease;
 }
 body.is-complete .dial-status{color:var(--kd-accent);}
-body.is-complete .dial-glow{opacity:0.85;}
+body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 
 /* ---------- stats ---------- */
 .stats{
@@ -379,6 +392,17 @@ body.is-complete .dial-glow{opacity:0.85;}
 .seg button.is-active{color:var(--kd-text);border-color:var(--kd-line);}
 
 .tally-row{display:grid;grid-template-columns:repeat(28,1fr);gap:3px;height:34px;}
+/* Which way time runs. Cheap to add, and it stops the flipped order
+   from being a puzzle. */
+.tally-axis{
+  display:flex;
+  justify-content:space-between;
+  margin-top:0.55rem;
+  font-size:var(--kd-fs-tag);
+  letter-spacing:var(--kd-track-label);
+  text-transform:uppercase;
+  color:var(--kd-muted);
+}
 .tally{
   align-self:end;
   width:100%;
@@ -463,22 +487,22 @@ body.is-complete .dial-glow{opacity:0.85;}
    see once it's lit looks broken rather than restrained. */
 .g .seg{
   fill:none;
-  stroke:rgb(var(--kd-text-rgb) / 0.12);
+  stroke:var(--kd-track);
   stroke-width:5;
   stroke-linecap:round;
   transition:stroke var(--kd-t-fast) var(--kd-ease),opacity var(--kd-t-fast) var(--kd-ease);
 }
 .g .seg.on{
   stroke:var(--kd-accent);
-  filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / 0.7));
+  filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / var(--kd-glow)));
 }
 /* Animates opacity and glow rather than stroke-width, so the variants
    keep their own weights (rings 2.4, clock 8) while it plays. */
 .g .seg.pop{animation:seg-pop 0.5s var(--kd-ease);}
 @keyframes seg-pop{
   0%{opacity:0.3;filter:none;}
-  35%{opacity:1;filter:drop-shadow(0 0 11px rgb(var(--kd-accent-rgb) / 1));}
-  100%{opacity:1;filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / 0.7));}
+  35%{opacity:1;filter:drop-shadow(0 0 11px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 1.4)));}
+  100%{opacity:1;filter:drop-shadow(0 0 5px rgb(var(--kd-accent-rgb) / var(--kd-glow)));}
 }
 
 /* needle: the part that reads as a real instrument */
@@ -515,7 +539,7 @@ body.is-complete .dial-glow{opacity:0.85;}
 
 /* completing a section locks the instrument — it should be obvious
    from across the room which sections are shut */
-.g.full .seg.on{filter:drop-shadow(0 0 9px rgb(var(--kd-accent-rgb) / 0.95));}
+.g.full .seg.on{filter:drop-shadow(0 0 9px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 1.35)));}
 .g-rings.full .core{fill:var(--kd-accent);}
 .g.full .needle line{stroke:var(--kd-accent);}
 .g.full .hub{fill:var(--kd-accent);}
@@ -650,7 +674,6 @@ body.is-complete .dial-glow{opacity:0.85;}
   touch-action:manipulation;
   transition:border-color var(--kd-t-fast) var(--kd-ease),color var(--kd-t-fast) var(--kd-ease),opacity var(--kd-t-fast) ease;
 }
-.btn:hover{border-color:var(--kd-muted);}
 .btn:active{opacity:0.7;}
 .btn.is-on{border-color:var(--kd-accent);color:var(--kd-accent);}
 .btn.primary{background:var(--kd-accent);border-color:var(--kd-accent);color:var(--kd-on-accent);}
@@ -658,7 +681,6 @@ body.is-complete .dial-glow{opacity:0.85;}
 .btn:disabled{opacity:0.35;pointer-events:none;}
 .btn.block{width:100%;display:block;padding:0.85rem 1.2rem;}
 .btn.ghost{border-color:transparent;color:var(--kd-muted);}
-.btn.ghost:hover{color:var(--kd-text);border-color:transparent;}
 
 /* ============================================================
    Onboarding
@@ -735,7 +757,6 @@ body.is-complete .dial-glow{opacity:0.85;}
   cursor:pointer;
   transition:border-color var(--kd-t-fast) var(--kd-ease),background var(--kd-t-fast) var(--kd-ease);
 }
-.ob-choice:hover{border-color:var(--kd-muted);}
 .ob-choice.is-active{
   border-color:var(--kd-accent);
   background:rgb(var(--kd-accent-rgb) / 0.08);
@@ -755,7 +776,6 @@ body.is-complete .dial-glow{opacity:0.85;}
   text-align:left;
   transition:border-color var(--kd-t-fast) var(--kd-ease),color var(--kd-t-fast) var(--kd-ease),background var(--kd-t-fast) var(--kd-ease);
 }
-.ob-pill:hover{color:var(--kd-text);border-color:var(--kd-muted);}
 .ob-pill.is-active{
   border-color:var(--kd-accent);
   background:var(--kd-accent);
@@ -834,7 +854,6 @@ body.is-complete .dial-glow{opacity:0.85;}
   position:relative;
   transition:transform var(--kd-t-fast) var(--kd-ease),box-shadow var(--kd-t-fast) var(--kd-ease);
 }
-.swatch:hover{transform:scale(1.08);}
 /* The ring sits outside the colour so it reads on any of the six. */
 .swatch.is-active{
   box-shadow:0 0 0 2px var(--kd-bg),0 0 0 4px var(--kd-text);
@@ -859,7 +878,6 @@ body.is-complete .dial-glow{opacity:0.85;}
   padding:0;
   transition:background var(--kd-t-fast) var(--kd-ease),color var(--kd-t-fast) var(--kd-ease),border-color var(--kd-t-fast) var(--kd-ease);
 }
-.day:hover{border-color:var(--kd-muted);color:var(--kd-text);}
 .day.on{
   background:var(--kd-accent);
   border-color:var(--kd-accent);
@@ -925,7 +943,6 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
   cursor:pointer;
   transition:color var(--kd-t-fast) var(--kd-ease),border-color var(--kd-t-fast) var(--kd-ease);
 }
-.remove:hover{color:var(--kd-error);border-color:rgba(198,47,47,0.4);}
 .sub-head{
   display:flex;
   align-items:center;
@@ -948,7 +965,6 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
   padding:0.2rem 0;
   transition:color var(--kd-t-fast) var(--kd-ease);
 }
-.add:hover{color:var(--kd-accent);}
 .row-btns{display:flex;gap:0.6rem;flex-wrap:wrap;}
 .row-btns .btn{flex:1;min-width:120px;text-align:center;}
 .toast{
@@ -984,4 +1000,33 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
     transition-duration:0.01ms !important;
   }
   .rise{animation:none;opacity:1;transform:none;filter:none;}
+}
+
+/* ============================================================
+   Hover, for things that can actually hover
+
+   A touch tap leaves :hover latched on the last element touched, so
+   ungated hover styles read as a button that stays lit — or, with a
+   transform, one that stays zoomed. That was the wiggle. Gating the
+   whole set behind a hover-capable pointer keeps the desktop polish
+   and gives the phone none of the artefacts.
+   ============================================================ */
+@media (hover:hover) and (pointer:fine){
+  .icon-btn:hover{color:var(--kd-text);border-color:var(--kd-muted);}
+  .btn:hover{border-color:var(--kd-muted);}
+  .btn.ghost:hover{color:var(--kd-text);border-color:transparent;}
+  .ob-choice:hover{border-color:var(--kd-muted);}
+  .ob-pill:hover{color:var(--kd-text);border-color:var(--kd-muted);}
+  .swatch:hover{transform:scale(1.08);}
+  .day:hover{border-color:var(--kd-muted);color:var(--kd-text);}
+  .remove:hover{color:var(--kd-error);border-color:rgba(198,47,47,0.4);}
+  .add:hover{color:var(--kd-accent);}
+}
+
+/* No double-tap-to-zoom on anything meant to be tapped. Without this
+   iOS waits to see if a second tap is coming, which both delays the
+   response and zooms the page when it decides one was. */
+.item,.train,.day,.swatch,.ob-pill,.ob-choice,.seg button,.icon-btn,
+.remove,.add,.btn,.tally,.ycell{
+  touch-action:manipulation;
 }

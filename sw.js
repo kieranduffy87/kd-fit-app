@@ -84,7 +84,7 @@ self.addEventListener('notificationclick', (event) => {
 
 // The daily reminder from the scheduled GitHub Action.
 self.addEventListener('push', (event) => {
-  let data = { title: '40', body: 'Log the day before it resets.' };
+  let data = { title: 'Jotara', body: 'Log the day before it resets.' };
   try { if (event.data) data = event.data.json(); } catch (e) { /* keep default */ }
   event.waitUntil(
     self.registration.showNotification(data.title, {

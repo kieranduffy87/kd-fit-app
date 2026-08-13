@@ -1,5 +1,5 @@
 /* ============================================================
-   40 — KD Performance Log
+   Jotara — a daily habit log
 
    Storage keys
      kd-fit:config            editable config (habits, training, birthday)
@@ -782,7 +782,7 @@ function build(){
     <header class="masthead rise">
       <div class="brand">
         ${KD_MARK}
-        <div class="label">Performance Log</div>
+        <div class="label">Jotara</div>
       </div>
       <div class="masthead-right">
         <div class="label" data-today-date></div>
@@ -937,7 +937,12 @@ function buildLedger(){
 }
 
 function buildTally(){
-  const days = recentHistory();
+  /* Newest first. Chronological order put today at the far right, which
+     reads as though the chart starts in the wrong corner — everything
+     else on the page starts at the left. Reversed, the eye lands on
+     today first and history trails off behind it, and the axis caption
+     below says which way time runs so it can't be misread. */
+  const days = recentHistory().slice().reverse();
   const tKey = dayKey();
 
   el.ledgerLabel.textContent = 'Last 28 days';
@@ -953,7 +958,11 @@ function buildTally(){
         style="height:${38 + ratio * 62}%;${REDUCED_MOTION ? '' : `animation:kd-tally-in 0.5s var(--kd-ease) ${320 + i * 14}ms both`}"
         title="${label} — ${d.done}/${d.total}"></div>`;
     }).join('')
-  }</div>`;
+  }</div>
+  <div class="tally-axis">
+    <span>Today</span>
+    <span>28 days ago</span>
+  </div>`;
   el.tally = document.querySelector('[data-tally]');
 }
 
@@ -978,6 +987,10 @@ function buildYear(){
         const label = d.date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
         return `<div class="${cls}" data-day="${d.key}" title="${label} — ${d.done}/${d.total}"></div>`;
       }).join('')}</div>
+    </div>
+    <div class="tally-axis">
+      <span>12 months ago</span>
+      <span>Today</span>
     </div>`;
 
   // Land on today rather than a year ago.
@@ -1587,7 +1600,7 @@ function wireSheet(sheet){
   const test = q('[data-test-push]');
   if(test) test.addEventListener('click', async () => {
     const reg = await navigator.serviceWorker.ready;
-    reg.showNotification('40', { body: 'This is what the daily nudge looks like.', icon: 'icons/icon-192.png' });
+    reg.showNotification('Jotara', { body: 'This is what the daily nudge looks like.', icon: 'icons/icon-192.png' });
   });
 }
 

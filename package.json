@@ -2,7 +2,7 @@
   "name": "kd-fit-app",
   "version": "1.0.0",
   "private": true,
-  "description": "40 — KD Performance Log",
+  "description": "Jotara — a daily habit log",
   "type": "module",
   "scripts": {
     "build": "node scripts/build-www.mjs",
