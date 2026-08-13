@@ -1,15 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Jotara">
   <defs>
-    <radialGradient id="bloom" cx="50%" cy="8%" r="78%">
-      <stop offset="0%" stop-color="#0339f8" stop-opacity="0.55"/>
-      <stop offset="55%" stop-color="#01145a" stop-opacity="0.42"/>
-      <stop offset="100%" stop-color="#0a0b0e" stop-opacity="0"/>
+    <!-- The same coral-to-mauve ground as the raster icons, built from
+         three overlapping radials so a 16px favicon still reads warm
+         rather than resolving to one flat brown. -->
+    <radialGradient id="c" cx="10%" cy="2%" r="115%">
+      <stop offset="0" stop-color="#f4785c"/>
+      <stop offset="1" stop-color="#f4785c" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="m" cx="80%" cy="98%" r="110%">
+      <stop offset="0" stop-color="#b08aa8"/>
+      <stop offset="1" stop-color="#b08aa8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="r" cx="95%" cy="20%" r="105%">
+      <stop offset="0" stop-color="#d69694"/>
+      <stop offset="1" stop-color="#d69694" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="64" height="64" fill="#0a0b0e"/>
-  <rect width="64" height="64" fill="url(#bloom)"/>
-  <g transform="translate(10.239999999999998 18.29190118152524) scale(2.3372717508055856)">
-    <polygon fill="#0339f8" points="18.62 0 12 0 6 5.86 12 11.73 18.62 11.73 12.62 5.86 18.62 0"/>
-    <polygon fill="#f4f4f6" points="0 0 0 11.72 6 5.86 0 0"/>
+
+  <rect width="512" height="512" fill="#2c1f28"/>
+  <rect width="512" height="512" fill="url(#c)"/>
+  <rect width="512" height="512" fill="url(#r)"/>
+  <rect width="512" height="512" fill="url(#m)"/>
+
+  <!-- jot.svg, scaled to 52% of the canvas height and centred -->
+  <g transform="translate(122.5,123.1) scale(2.6072)" fill="#f6eef0">
+    <path d="M34,34.01C34,52.79,18.79,68.02,0,68.02v34.01c37.56,0,68.01-30.46,68.01-68.02h-34.01Z"/>
+    <rect width="34.01" height="34.01"/>
   </g>
 </svg>
