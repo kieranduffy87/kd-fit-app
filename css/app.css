@@ -430,24 +430,47 @@ body.is-complete .dial-target{stroke:var(--kd-accent);}
 }
 .dial-seal{
   position:absolute;
-  width:70%;
+  width:74%;
   aspect-ratio:1;
   display:grid;
   place-items:center;
   opacity:0;
-  transform:scale(0.82);
-  filter:blur(6px);
+  transform:scale(0.86);
   pointer-events:none;
-  transition:opacity 0.6s var(--kd-ease),transform 0.7s var(--kd-ease),filter 0.6s var(--kd-ease);
+  transition:opacity 0.5s var(--kd-ease),transform 0.6s var(--kd-ease);
 }
-.dial-seal svg{
-  width:100%;
-  height:100%;
-  overflow:visible;
-  filter:drop-shadow(0 10px 26px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 0.71)));
+.dial-seal svg{width:100%;height:100%;display:block;overflow:visible;}
+/* A soft disc of accent behind the stroke, so the check sits on light
+   rather than on the mesh. */
+/* Blurred, so it reads as light behind the stroke rather than a disc
+   drawn on top of the mesh — a hard circle edge here looked like a
+   mistake. */
+.seal-bloom{
+  fill:rgb(var(--kd-accent-rgb) / 0.20);
+  filter:blur(14px);
+  transform-origin:50% 50%;
+  transform:scale(0.55);
+  transition:transform 0.7s var(--kd-ease);
 }
-.dial.show-seal .dial-face{opacity:0;transform:scale(0.9);filter:blur(4px);}
-.dial.show-seal .dial-seal{opacity:1;transform:scale(1);filter:blur(0);}
+.seal-check{
+  fill:none;
+  stroke:var(--kd-accent);
+  stroke-width:7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 0 10px rgb(var(--kd-accent-rgb) / calc(var(--kd-glow) * 0.8)));
+}
+/* Drawn, not faded in — the length is the path's own, measured once by
+   hand so no JS is needed to set it. */
+.seal-check.draw{
+  stroke-dasharray:78;
+  stroke-dashoffset:78;
+  animation:seal-draw 0.62s var(--kd-ease) 0.12s forwards;
+}
+@keyframes seal-draw{ to{ stroke-dashoffset:0; } }
+.dial.show-seal .dial-face{opacity:0;transform:scale(0.92);filter:blur(4px);}
+.dial.show-seal .dial-seal{opacity:1;transform:scale(1);}
+.dial.show-seal .seal-bloom{transform:scale(1);}
 body.is-complete .dial{cursor:pointer;}
 .dial-num{font-size:clamp(4.25rem,19vw,5.75rem);font-weight:500;line-height:0.92;}
 .dial-unit{font-size:1.05rem;font-weight:500;letter-spacing:-0.01em;}
@@ -1022,6 +1045,11 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
   z-index:50;
   background:var(--kd-bg);
   overflow-y:auto;
+  /* WebKit gives input[type=date] an intrinsic width wider than its
+     container, which pushed the sheet past the viewport and left it
+     swiping sideways a few pixels. Clamp the control, and stop the
+     scroll at the container as a backstop. */
+  overflow-x:hidden;
   overscroll-behavior:contain;
   animation:sheet-in 0.4s var(--kd-ease) both;
 }
@@ -1068,10 +1096,47 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 }
 .swatch:focus-visible{outline:2px solid var(--kd-text);outline-offset:3px;}
 
-/* ---------- day-of-week chips ---------- */
+/* ---------- day-of-week chips ----------
+   Collapsed to a summary by default. Seven chips on every habit made a
+   long list unreadable, and the answer is "every day" for most of them
+   anyway — so the chips are opt-in and the summary carries the state. */
 .field-group{margin-bottom:0.85rem;}
-.field-group .field{margin-bottom:0.4rem;}
-.days{display:flex;align-items:center;gap:0.28rem;flex-wrap:wrap;padding-left:0.1rem;}
+.field-group .field{margin-bottom:0.25rem;}
+.days-wrap{padding-left:0.1rem;}
+.days-summary{
+  font-family:inherit;
+  font-size:var(--kd-fs-tag);
+  letter-spacing:0.04em;
+  color:var(--kd-muted);
+  background:transparent;
+  border:none;
+  border-radius:var(--kd-pill);
+  padding:0.15rem 0;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:0.35rem;
+  transition:color var(--kd-t-fast) var(--kd-ease);
+}
+.days-summary::after{
+  content:'';
+  width:5px;height:5px;
+  border-right:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor;
+  transform:rotate(45deg) translate(-1px,-1px);
+  transition:transform var(--kd-t-fast) var(--kd-ease);
+}
+.days-wrap.is-open .days-summary::after{transform:rotate(-135deg) translate(-2px,-2px);}
+/* A habit that isn't every-day is worth spotting in a long list. */
+.days-wrap.is-custom .days-summary{color:var(--kd-accent);}
+.days{
+  display:flex;
+  align-items:center;
+  gap:0.28rem;
+  flex-wrap:wrap;
+  padding:0.4rem 0 0.2rem;
+}
+.days[hidden]{display:none;}
 .day{
   width:26px;height:26px;
   flex:none;
@@ -1092,12 +1157,7 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
   color:var(--kd-on-accent);
 }
 .day:focus-visible{outline:2px solid var(--kd-text);outline-offset:2px;}
-.days-note{
-  font-size:var(--kd-fs-tag);
-  color:var(--kd-muted);
-  margin-left:0.45rem;
-  letter-spacing:0.02em;
-}
+
 /* Shown on a card when some of its habits aren't scheduled today. */
 .card-aside{
   font-size:var(--kd-fs-tag);
@@ -1136,7 +1196,13 @@ body.is-complete .dial-glow{opacity:calc(var(--kd-glow) * 1.21);}
 }
 .input:focus{outline:none;border-color:var(--kd-accent);}
 .input.narrow{flex:none;width:64px;text-align:center;}
-.input[type="date"]{width:100%;}
+.input[type="date"],.input[type="time"]{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  -webkit-appearance:none;
+  appearance:none;
+}
 textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8rem;}
 .remove{
   flex:none;
@@ -1156,8 +1222,29 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
   align-items:center;
   justify-content:space-between;
   gap:1rem;
-  margin:1.4rem 0 0.5rem;
+  margin:2rem 0 0.6rem;
 }
+/* The group title was styled identically to the habit rows beneath it,
+   so a list read as one flat run of inputs. It now reads as a heading:
+   larger, heavier, no box until you touch it. */
+.input.title-input{
+  font-size:1.1rem;
+  font-weight:600;
+  letter-spacing:var(--kd-track-display);
+  background:transparent;
+  border-color:transparent;
+  padding-left:0;
+  padding-right:0;
+}
+.input.title-input:focus{
+  background:var(--kd-surface);
+  border-color:var(--kd-line);
+  padding-left:0.8rem;
+  padding-right:0.8rem;
+}
+/* Habits sit indented under their title, so the hierarchy is spatial
+   as well as typographic. */
+.field-group{padding-left:0.9rem;border-left:1px solid var(--kd-line);}
 .sub-head:first-child{margin-top:0;}
 .sub-title{font-size:0.97rem;font-weight:600;}
 .add{

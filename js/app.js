@@ -287,15 +287,6 @@ function applyTheme(){
   // app in light mode doesn't animate from dark.
   requestAnimationFrame(() => root.setAttribute('data-theme-ready', ''));
 
-  /* The 3D seal bakes its colours in at build time, so it has to be
-     thrown away and rebuilt against the new tokens. */
-  if(mark3d){
-    mark3d.stop();
-    mark3d = null;
-    const svg = document.querySelector('[data-mark3d]');
-    if(svg) svg.innerHTML = '';
-    if(document.body.classList.contains('is-complete')) syncSeal(true);
-  }
 }
 systemDark.addEventListener('change', () => {
   if(config.theme === 'system') applyTheme();
@@ -813,7 +804,10 @@ function build(){
           <div class="dial-date" data-dial-date>${dialDate()}</div>
         </div>
         <div class="dial-seal" data-seal>
-          <svg viewBox="-100 -100 200 200" data-mark3d aria-hidden="true"></svg>
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="seal-bloom" cx="50" cy="50" r="34"/>
+            <path class="seal-check" d="M30 51.5 L44 65.5 L71 35"/>
+          </svg>
         </div>
       </div>
       <div class="dial-status" data-status></div>
@@ -1119,36 +1113,40 @@ function sync(){
 }
 
 /* ---------- the completion seal ----------
-   Close the day and the countdown gives way to the mark, extruded and
-   turning. Tap the dial to swap back to the number. It only renders
-   while the day is complete and the tab is visible — an idle animation
-   nobody is looking at is just battery. */
-let mark3d = null;
-let sealOn = false;
+   Closing the day used to swap the number for the logo, extruded and
+   spinning. A rotating 3D wordmark is a screensaver, not a reward: it
+   said nothing about the day, it never settled, and it dragged a whole
+   software renderer along with it.
+
+   What replaces it is a mark being made — a check drawn in one stroke,
+   left to right, over a soft bloom of the accent. It has an end state,
+   it reads instantly at a glance, and it is the same gesture you just
+   performed four times to get here. Tap the dial to go back to the
+   count. */
+let sealOn = true;
 
 function syncSeal(complete){
   const dial = document.querySelector('.dial');
   if(!dial) return;
   const show = complete && sealOn;
+  const was = dial.classList.contains('show-seal');
   dial.classList.toggle('show-seal', show);
 
-  if(!show){
-    if(mark3d) mark3d.stop();
-    return;
+  // Re-run the draw only on the transition into the sealed state, so it
+  // isn't redrawn by every unrelated sync.
+  if(show && !was){
+    const check = dial.querySelector('.seal-check');
+    if(check && !REDUCED_MOTION){
+      check.classList.remove('draw');
+      void check.getBoundingClientRect();
+      check.classList.add('draw');
+    }
   }
-  if(!mark3d){
-    const svg = document.querySelector('[data-mark3d]');
-    if(!svg || !window.KDMark3D) return;
-    mark3d = window.KDMark3D.create(svg);
-  }
-  if(REDUCED_MOTION) mark3d.still();
-  else mark3d.start();
 }
 
 function wireSeal(){
   const dial = document.querySelector('.dial');
   if(!dial) return;
-  sealOn = true;
   dial.addEventListener('click', () => {
     if(!document.body.classList.contains('is-complete')) return;
     sealOn = !sealOn;
@@ -1157,17 +1155,13 @@ function wireSeal(){
   });
 }
 
-document.addEventListener('visibilitychange', () => {
-  if(!mark3d) return;
-  if(document.hidden) mark3d.stop();
-  else syncSeal(document.body.classList.contains('is-complete'));
-});
-
 function syncNotifStatus(){
   if(!el.notifStatus) return;
   if(window.KDNative && window.KDNative.isNative){
-    const r = read('kd-fit:reminder', null);
-    el.notifStatus.textContent = r ? `On — every day at ${r.at}` : 'Off — pick a time';
+    const t = reminderTimes();
+    el.notifStatus.textContent = !t.length ? 'Off — pick a time'
+      : t.length === 1 ? `On — every day at ${t[0]}`
+      : `On — ${t.length} times a day`;
     return;
   }
   if(!NOTIF_SUPPORTED){ el.notifStatus.textContent = 'Not supported in this browser'; return; }
@@ -1285,24 +1279,33 @@ function closeSheet(){
    Sunday. The value stored is still the JS index. */
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
+/* Seven chips plus "Every day" repeated down a list of habits is a wall
+   of near-identical marks — and for most habits the answer never
+   changes from the default. So the row collapses to its own summary and
+   only opens the chips when you actually want to change something. */
 function dayChips(si, ii, item){
-  // No `days` at all means every day, so every chip reads as on.
   const on = d => !Array.isArray(item.days) || !item.days.length || item.days.includes(d);
+  const everyDay = !Array.isArray(item.days) || !item.days.length || item.days.length === 7;
   return `
-    <div class="days" role="group" aria-label="Days this habit runs">
-      ${WEEK_ORDER.map(d => `
-        <button type="button" class="day${on(d) ? ' on' : ''}"
-                data-day-toggle="${si}.${ii}.${d}"
-                aria-pressed="${on(d)}"
-                title="${DAY_FULL[d]}">${DAY_NAMES[d]}</button>`).join('')}
-      <span class="days-note" data-days-note="${si}.${ii}">${escapeHtml(daysLabel(item))}</span>
+    <div class="days-wrap${everyDay ? '' : ' is-custom'}" data-days-wrap="${si}.${ii}">
+      <button type="button" class="days-summary" data-days-open="${si}.${ii}"
+              aria-expanded="false">
+        <span data-days-note="${si}.${ii}">${escapeHtml(daysLabel(item))}</span>
+      </button>
+      <div class="days" role="group" aria-label="Days this habit runs" hidden>
+        ${WEEK_ORDER.map(d => `
+          <button type="button" class="day${on(d) ? ' on' : ''}"
+                  data-day-toggle="${si}.${ii}.${d}"
+                  aria-pressed="${on(d)}"
+                  title="${DAY_FULL[d]}">${DAY_NAMES[d]}</button>`).join('')}
+      </div>
     </div>`;
 }
 
 function sheetMarkup(){
   const sections = config.daily.map((sec, si) => `
     <div class="sub-head">
-      <input class="input" data-section-title="${si}" value="${escapeHtml(sec.title)}" aria-label="Section name">
+      <input class="input title-input" data-section-title="${si}" value="${escapeHtml(sec.title)}" aria-label="Section name">
       <button class="add" type="button" data-add-item="${si}">+ Habit</button>
     </div>
     ${sec.items.map((it, ii) => `
@@ -1374,10 +1377,10 @@ function sheetMarkup(){
       <div class="label">Daily habits</div>
       ${sections}
       <div class="group-note">
-        These drive the ring, the streak and the ledger. Tap the day letters to
-        run a habit only on certain days — a Tuesday habit can't cost you a
-        Thursday. Renaming keeps the history attached; removing a habit leaves
-        its past ticks in place but stops counting it.
+        These drive the ring, the streak and the ledger. Tap a habit's day
+        summary to run it only on certain days — a Tuesday habit can't cost
+        you a Thursday. Renaming keeps the history attached; removing a habit
+        leaves its past ticks in place but stops counting it.
       </div>
     </div>
 
@@ -1433,22 +1436,43 @@ function sheetMarkup(){
   </div>`;
 }
 
+/* Reminders are a list now. The old shape was a single { at } object,
+   so anything stored by an earlier build is lifted into a one-item
+   list rather than dropped. */
+function reminderTimes(){
+  const raw = read('kd-fit:reminder', null);
+  if(!raw) return [];
+  if(Array.isArray(raw)) return raw.filter(t => typeof t === 'string');
+  if(raw.at) return [raw.at];
+  return [];
+}
+
 function pushMarkup(sub){
   // Native shell: the OS owns the schedule. No keys, no secrets, no
   // subscription to keep alive — and it fires whether or not the app
   // has been opened.
   if(window.KDNative && window.KDNative.isNative){
-    const time = read('kd-fit:reminder', null);
-    return `
+    const times = reminderTimes();
+    const rows = times.map((at, i) => `
       <div class="field">
-        <input class="input" type="time" data-remind-time value="${escapeHtml(time ? time.at : '07:30')}">
-        <button class="btn" type="button" data-remind-set>${time ? 'Update' : 'Set'}</button>
+        <input class="input" type="time" data-remind-time="${i}" value="${escapeHtml(at)}">
+        <button class="remove" type="button" data-remind-del="${i}" aria-label="Remove reminder">&times;</button>
+      </div>`).join('');
+
+    return `
+      ${rows || '<div class="group-note">No reminders set.</div>'}
+      <div class="sub-head">
+        <div></div>
+        <button class="add" type="button" data-remind-add>+ Time</button>
       </div>
-      ${time ? `<div class="row-btns"><button class="btn danger" type="button" data-remind-off>Turn off</button></div>` : ''}
+      <div class="row-btns">
+        <button class="btn primary" type="button" data-remind-set>${times.length ? 'Save times' : 'Set reminder'}</button>
+        ${times.length ? '<button class="btn danger" type="button" data-remind-off>Turn all off</button>' : ''}
+      </div>
       <div class="group-note">
-        ${time
-          ? `Scheduled for ${escapeHtml(time.at)} every day, by the phone itself.`
-          : 'Pick a time and the phone will nudge you every day — offline, no server.'}
+        ${times.length
+          ? `Scheduled every day at ${times.map(escapeHtml).join(', ')} — by the phone itself, offline.`
+          : 'Add one or more times and the phone will nudge you every day — offline, no server. A morning prompt and an evening log are a different job, so more than one is fine.'}
       </div>`;
   }
 
@@ -1544,6 +1568,16 @@ function wireSheet(sheet){
     tap('light');
   }));
 
+  all('[data-days-open]').forEach(b => b.addEventListener('click', () => {
+    const wrap = q(`[data-days-wrap="${b.dataset.daysOpen}"]`);
+    if(!wrap) return;
+    const chips = wrap.querySelector('.days');
+    const open = chips.hidden;
+    chips.hidden = !open;
+    wrap.classList.toggle('is-open', open);
+    b.setAttribute('aria-expanded', String(open));
+  }));
+
   /* Day chips patch in place rather than rebuilding the sheet — a
      rebuild would throw you back to the top of a long scroll. */
   all('[data-day-toggle]').forEach(b => b.addEventListener('click', () => {
@@ -1568,6 +1602,11 @@ function wireSheet(sheet){
     b.setAttribute('aria-pressed', String(on));
     const note = q(`[data-days-note="${si}.${ii}"]`);
     if(note) note.textContent = daysLabel(item);
+    const wrap = q(`[data-days-wrap="${si}.${ii}"]`);
+    if(wrap){
+      const custom = Array.isArray(item.days) && item.days.length && item.days.length < 7;
+      wrap.classList.toggle('is-custom', !!custom);
+    }
     saveConfig();
     tap('light');
   }));
@@ -1586,12 +1625,40 @@ function wireSheet(sheet){
     saveConfig(); reopen(); toast('Settings reset');
   });
 
+  // Read every time field back, in order, de-duplicated.
+  const collectTimes = () =>
+    [...new Set(all('[data-remind-time]').map(i => i.value).filter(Boolean))].sort();
+
+  const addTime = q('[data-remind-add]');
+  if(addTime) addTime.addEventListener('click', () => {
+    const times = collectTimes();
+    if(times.length >= 8){ toast('Eight reminders is plenty'); return; }
+    // Offer a sensible second slot rather than another 07:30 to edit.
+    times.push(times.includes('07:30') ? '20:30' : '07:30');
+    write('kd-fit:reminder', [...new Set(times)].sort());
+    reopen();
+  });
+  all('[data-remind-del]').forEach(b => b.addEventListener('click', () => {
+    const times = collectTimes();
+    times.splice(+b.dataset.remindDel, 1);
+    write('kd-fit:reminder', times);
+    reopen();
+  }));
+
   const setTime = q('[data-remind-set]');
   if(setTime) setTime.addEventListener('click', async () => {
-    const at = q('[data-remind-time]').value || '07:30';
-    const [h, m] = at.split(':').map(Number);
-    const ok = await window.KDNative.scheduleDaily(h, m);
-    if(ok){ write('kd-fit:reminder', { at }); reopen(); toast(`Reminder set for ${at}`); }
+    const times = collectTimes();
+    if(!times.length){ toast('Add a time first'); return; }
+    const parsed = times.map(at => {
+      const [hour, minute] = at.split(':').map(Number);
+      return { hour, minute };
+    });
+    const ok = await window.KDNative.scheduleDaily(parsed);
+    if(ok){
+      write('kd-fit:reminder', times);
+      reopen();
+      toast(times.length === 1 ? `Reminder set for ${times[0]}` : `${times.length} reminders set`);
+    }
     else toast('Notifications not allowed');
   });
   const offBtn = q('[data-remind-off]');

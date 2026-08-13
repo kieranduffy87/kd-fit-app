@@ -24,7 +24,13 @@
   const plugins = (cap && cap.Plugins) || {};
   const platform = (cap && typeof cap.getPlatform === 'function') ? cap.getPlatform() : 'web';
 
+  /* One notification id per reminder, allocated from a fixed base so
+     they can all be cancelled without knowing what was scheduled. Eight
+     a day is well past useful and keeps the id range predictable. */
   const REMINDER_ID = 4040;
+  const MAX_REMINDERS = 8;
+  const reminderIds = () =>
+    Array.from({ length: MAX_REMINDERS }, (_, i) => REMINDER_ID + i);
 
   /* ---------- haptics ---------- */
   const WEB_PATTERNS = { light: 8, tick: 14, success: [14, 60, 14, 60, 26] };
@@ -63,30 +69,41 @@
     }catch(e){ return 'denied'; }
   }
 
-  // repeats:true with an `on` pattern means the OS owns the schedule —
-  // it keeps firing daily without the app ever being opened.
-  async function scheduleDaily(hour, minute){
+  /* repeats:true with an `on` pattern means the OS owns the schedule —
+     it keeps firing daily without the app ever being opened.
+
+     Takes a list of times so a day can have several nudges: a morning
+     one to set up and an evening one to log are a different job. Every
+     id is cancelled first, so removing a time actually removes it
+     rather than leaving an orphan firing forever. */
+  async function scheduleDaily(times){
     if(!isNative || !ln()) return false;
+    // tolerate the old (hour, minute) call signature
+    if(typeof times === 'number') times = [{ hour: arguments[0], minute: arguments[1] }];
+    if(!Array.isArray(times) || !times.length) return false;
+
     const permission = await reminderPermission();
     if(permission !== 'granted') return false;
+
     try{
-      await ln().cancel({ notifications: [{ id: REMINDER_ID }] });
-      await ln().schedule({
-        notifications: [{
-          id: REMINDER_ID,
-          title: '40',
-          body: LINES[new Date().getDate() % LINES.length],
-          schedule: { on: { hour, minute }, allowWhileIdle: true, repeats: true },
-          smallIcon: 'ic_stat_icon'
-        }]
-      });
+      await cancelDaily();
+      const list = times.slice(0, MAX_REMINDERS).map((t, i) => ({
+        id: REMINDER_ID + i,
+        title: 'Jotara',
+        // Stagger the copy so two reminders on one day don't read as a
+        // duplicate notification.
+        body: LINES[(new Date().getDate() + i) % LINES.length],
+        schedule: { on: { hour: t.hour, minute: t.minute }, allowWhileIdle: true, repeats: true },
+        smallIcon: 'ic_stat_icon'
+      }));
+      await ln().schedule({ notifications: list });
       return true;
     }catch(e){ return false; }
   }
 
   async function cancelDaily(){
     if(!isNative || !ln()) return;
-    try{ await ln().cancel({ notifications: [{ id: REMINDER_ID }] }); }
+    try{ await ln().cancel({ notifications: reminderIds().map(id => ({ id })) }); }
     catch(e){ /* nothing scheduled */ }
   }
 
@@ -94,7 +111,8 @@
     if(!isNative || !ln()) return false;
     try{
       const list = await ln().getPending();
-      return (list.notifications || []).some(n => n.id === REMINDER_ID);
+      const ids = reminderIds();
+      return (list.notifications || []).some(n => ids.includes(n.id));
     }catch(e){ return false; }
   }
 
