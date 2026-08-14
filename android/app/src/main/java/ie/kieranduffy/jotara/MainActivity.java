@@ -1,4 +1,4 @@
-package ie.kieranduffy.kdfit;
+package ie.kieranduffy.jotara;
 
 import com.getcapacitor.BridgeActivity;
 

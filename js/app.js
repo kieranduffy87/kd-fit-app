@@ -443,6 +443,22 @@ function migrate(){
   if(at >= 6) return; // must match the version stamped at the end
   const keys = dayKeysInStorage();
 
+  /* Steps 3-5 exist to carry a specific old install forward. They must
+     only run for a store that genuinely came from that version.
+
+     `at === 0` with a config already present is not an old install —
+     it is a restored backup, a hand-seeded store, or a copy of the data
+     from somewhere else. Running the section-adding steps against one
+     of those injects fifteen legacy habits nobody asked for, on top of
+     whatever the user actually chose. Stamp it current and leave it
+     alone. */
+  const legacy = at > 0;
+  if(!legacy){
+    write(NS + 'migrated', 6);
+    if(read(NS + 'config', null) || keys.length) write(NS + 'onboarded', true);
+    return;
+  }
+
   if(at < 3){
     keys.forEach(k => {
       const entry = read(k, null);
