@@ -12,7 +12,8 @@
 <script>
 (function(){
   try{
-    var cfg = JSON.parse(localStorage.getItem('kd-fit:config') || '{}');
+    var ns = location.search.indexOf('demo=1') > -1 ? 'kd-demo:' : 'kd-fit:';
+    var cfg = JSON.parse(localStorage.getItem(ns + 'config') || '{}');
     var pref = cfg.theme || 'system';
     var dark = pref === 'dark' ||
       (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);

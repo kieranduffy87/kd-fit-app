@@ -1666,3 +1666,74 @@ textarea.input{resize:vertical;min-height:5.5rem;line-height:1.5;font-size:0.8re
 /* On the cover the copy is always light — it sits on a photograph, not
    on the theme's surface. */
 .onboard.is-cover .ob-actions .btn.primary{width:100%;}
+
+/* The category header carries its own tools, so adding a habit and
+   removing the whole group don't compete for the same slot. */
+.sub-head-tools{display:flex;align-items:center;gap:0.5rem;flex:none;}
+
+/* Multi-select focus: a tick that appears when chosen, so "more than
+   one" is legible rather than implied by colour alone. */
+.ob-choice{display:flex;align-items:center;justify-content:space-between;gap:1rem;}
+.ob-check{
+  width:20px;height:20px;flex:none;
+  border-radius:50%;
+  border:1.5px solid var(--kd-line);
+  position:relative;
+  transition:background var(--kd-t-fast) var(--kd-ease),border-color var(--kd-t-fast) var(--kd-ease);
+}
+.ob-choice.is-active .ob-check{background:var(--kd-accent);border-color:var(--kd-accent);}
+.ob-choice.is-active .ob-check::after{
+  content:'';
+  position:absolute;
+  left:6px;top:2.5px;
+  width:5px;height:10px;
+  border:solid var(--kd-on-accent);
+  border-width:0 2px 2px 0;
+  transform:rotate(45deg);
+}
+.ob-focus-note{
+  margin-top:0.9rem;
+  font-size:var(--kd-fs-tag);
+  letter-spacing:var(--kd-track-label);
+  text-transform:uppercase;
+  color:var(--kd-accent);
+}
+
+/* ---------- demo badge ----------
+   Only present when ?demo=1. It has to be unmissable: a sandbox that
+   looks exactly like the real app is a good test and a bad surprise. */
+.demo-bar{
+  /* Top, not bottom: the bottom of every screen already belongs to a
+     primary action — Get started, Continue, Done — and the badge was
+     landing on top of them. */
+  position:fixed;
+  left:50%;
+  top:calc(0.5rem + env(safe-area-inset-top));
+  transform:translateX(-50%);
+  z-index:90;
+  display:flex;
+  align-items:center;
+  gap:0.85rem;
+  padding:0.55rem 0.85rem 0.55rem 1.1rem;
+  border-radius:var(--kd-pill);
+  border:1px solid var(--glass-hair);
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.7);
+  backdrop-filter:blur(var(--glass-blur)) saturate(1.7);
+  box-shadow:inset 0 1px 0 var(--glass-edge),var(--glass-lift);
+  color:var(--kd-text);
+  font-family:inherit;
+  font-size:var(--kd-fs-tag);
+  letter-spacing:0.04em;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.demo-bar b{
+  color:var(--kd-accent);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--kd-track-label);
+}
+/* Keep the footer clear of the badge. */
+body.is-demo .shell{padding-top:calc(3.6rem + env(safe-area-inset-top));}
+body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}

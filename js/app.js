@@ -1,13 +1,14 @@
 /* ============================================================
    Jotara — a daily habit log
 
-   Storage keys
-     kd-fit:config            editable config (habits, training, birthday)
-     kd-fit:YYYY-MM-DD        a day's ticks, { itemId: true }
-     kd-fit:note:YYYY-MM-DD   a day's one-line note
-     kd-fit:view              ledger view preference
-     kd-fit:push              last push subscription, for the settings sheet
-     kd-fit:migrated          schema marker
+   Storage keys — all prefixed by NS, which is 'kd-fit:' normally and
+   'kd-demo:' when the URL carries ?demo=1
+     <ns>config                editable config (habits, training, goal)
+     <ns>YYYY-MM-DD          a day's ticks, { itemId: true }
+     <ns>note:YYYY-MM-DD     a day's one-line note
+     <ns>view                ledger view preference
+     <ns>push                last push subscription, for the settings sheet
+     <ns>migrated            schema marker
 
    Day records keep their original key format, so history logged by
    earlier versions carries over untouched.
@@ -171,6 +172,24 @@ const NOTIF_SUPPORTED = typeof Notification !== 'undefined';
 const PUSH_SUPPORTED = NOTIF_SUPPORTED && 'PushManager' in window;
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* ============================================================
+   Storage namespace
+
+   Everything is keyed under a prefix rather than a hardcoded one, so
+   `?demo=1` runs the whole app — onboarding included — against a
+   completely separate store. It is the same code, the same build and
+   the same service worker; only the keys differ, so a demo session
+   cannot see, change or delete a single record of the real log.
+   ============================================================ */
+const DEMO = (() => {
+  try{ return new URLSearchParams(location.search).has('demo'); }
+  catch(e){ return false; }
+})();
+const NS = DEMO ? 'kd-demo:' : 'kd-fit:';
+const DAY_KEY_RE = new RegExp('^' + NS + '\\d{4}-\\d{2}-\\d{2}$');
+const NOTE_KEY_RE = new RegExp('^' + NS + 'note:(\\d{4}-\\d{2}-\\d{2})$');
+const DAY_ONLY_RE = new RegExp('^' + NS + '(\\d{4}-\\d{2}-\\d{2})$');
+
 /* ---------- storage primitives ---------- */
 function read(key, fallback){
   try{
@@ -207,7 +226,7 @@ function unmirror(key){
 let config = loadConfig();
 
 function loadConfig(){
-  const stored = read('kd-fit:config', null);
+  const stored = read(NS + 'config', null);
   if(!stored) return structuredClone(DEFAULT_CONFIG);
   // Merge shallowly so a config saved by an older build still boots.
   // `birthday` was the only goal there used to be; fold it into the
@@ -225,7 +244,7 @@ function loadConfig(){
     accent: ACCENTS.some(a => a.id === stored.accent) ? stored.accent : 'blue'
   };
 }
-function saveConfig(){ write('kd-fit:config', config); }
+function saveConfig(){ write(NS + 'config', config); }
 
 /* ---------- which habits apply today ----------
    An item with no `days` runs every day. `days` is a list of JS
@@ -325,14 +344,14 @@ function weekStart(d = new Date()){
 }
 
 /* ---------- day records ---------- */
-function getDay(key){ return read(`kd-fit:${key}`, {}) || {}; }
-function setDay(key, data){ write(`kd-fit:${key}`, data); }
+function getDay(key){ return read(`${NS}${key}`, {}) || {}; }
+function setDay(key, data){ write(`${NS}${key}`, data); }
 function getNote(key){
-  try{ return localStorage.getItem(`kd-fit:note:${key}`) || ''; }
+  try{ return localStorage.getItem(`${NS}note:${key}`) || ''; }
   catch(e){ return ''; }
 }
 function setNote(key, text){
-  const k = `kd-fit:note:${key}`;
+  const k = `${NS}note:${key}`;
   try{
     if(text){ localStorage.setItem(k, text); mirror(k, text); }
     else { localStorage.removeItem(k); unmirror(k); }
@@ -392,7 +411,7 @@ function dayKeysInStorage(){
   const keys = [];
   for(let i = 0; i < localStorage.length; i++){
     const k = localStorage.key(i);
-    if(k && /^kd-fit:\d{4}-\d{2}-\d{2}$/.test(k)) keys.push(k);
+    if(k && DAY_KEY_RE.test(k)) keys.push(k);
   }
   return keys; // collected first — the loops below write as they go
 }
@@ -420,7 +439,7 @@ function stampTotals(keys, priorTotal){
 }
 
 function migrate(){
-  const at = read('kd-fit:migrated', 0);
+  const at = read(NS + 'migrated', 0);
   if(at >= 6) return; // must match the version stamped at the end
   const keys = dayKeysInStorage();
 
@@ -438,24 +457,24 @@ function migrate(){
   }
 
   if(at < 4){
-    const stored = read('kd-fit:config', null);
+    const stored = read(NS + 'config', null);
     const priorDaily = (stored && Array.isArray(stored.daily))
       ? stored.daily
       : DEFAULT_CONFIG.daily.filter(s => s.id !== 'inflammation' && s.id !== 'health');
     stampTotals(keys, priorDaily.reduce((n, s) => n + (s.items ? s.items.length : 0), 0));
     if(addSection(stored, 'inflammation', 'Inflammation', INFLAMMATION_ITEMS)){
-      write('kd-fit:config', stored);
+      write(NS + 'config', stored);
     }
   }
 
   if(at < 5){
-    const stored = read('kd-fit:config', null);
+    const stored = read(NS + 'config', null);
     const priorDaily = (stored && Array.isArray(stored.daily))
       ? stored.daily
       : DEFAULT_CONFIG.daily.filter(s => s.id !== 'health');
     stampTotals(keys, priorDaily.reduce((n, s) => n + (s.items ? s.items.length : 0), 0));
     if(addSection(stored, 'health', 'General health', HEALTH_ITEMS)){
-      write('kd-fit:config', stored);
+      write(NS + 'config', stored);
     }
   }
 
@@ -463,11 +482,11 @@ function migrate(){
      logged day has already set this app up by hand, and must not be
      dropped into a first-run wizard that would overwrite it. */
   if(at < 6){
-    const stored = read('kd-fit:config', null);
-    if(stored || keys.length) write('kd-fit:onboarded', true);
+    const stored = read(NS + 'config', null);
+    if(stored || keys.length) write(NS + 'onboarded', true);
   }
 
-  write('kd-fit:migrated', 6);
+  write(NS + 'migrated', 6);
 }
 
 /* localStorage in a WKWebView is evictable — iOS can clear it under
@@ -823,7 +842,7 @@ function dialDate(){
 const el = {};
 let ledgerView = (() => {
   try{
-    const v = localStorage.getItem('kd-fit:view');
+    const v = localStorage.getItem(NS + 'view');
     // '28' was the old default; anything unrecognised lands on the week
     return ['week', 'month', 'year'].includes(v) ? v : 'week';
   }catch(e){ return 'week'; }
@@ -1475,7 +1494,7 @@ function syncNotifStatus(){
   if(!NOTIF_SUPPORTED){ el.notifStatus.textContent = 'Not supported in this browser'; return; }
   if(Notification.permission === 'denied'){ el.notifStatus.textContent = 'Blocked — enable in Settings'; return; }
   if(Notification.permission === 'granted'){
-    el.notifStatus.textContent = read('kd-fit:push', null)
+    el.notifStatus.textContent = read(NS + 'push', null)
       ? 'On — a daily nudge is scheduled'
       : 'Allowed — finish setup to schedule it';
     return;
@@ -1602,7 +1621,7 @@ function wire(){
   document.querySelectorAll('[data-view]').forEach(b =>
     b.addEventListener('click', () => {
       ledgerView = b.dataset.view;
-      try{ localStorage.setItem('kd-fit:view', ledgerView); mirror('kd-fit:view', ledgerView); }catch(e){ /* ignore */ }
+      try{ localStorage.setItem(NS + 'view', ledgerView); mirror(NS + 'view', ledgerView); }catch(e){ /* ignore */ }
       buildLedger();
       sync();
     }));
@@ -1694,8 +1713,13 @@ function dayChips(si, ii, item){
 function sheetMarkup(){
   const sections = config.daily.map((sec, si) => `
     <div class="sub-head">
-      <input class="input title-input" data-section-title="${si}" value="${escapeHtml(sec.title)}" aria-label="Section name">
-      <button class="add" type="button" data-add-item="${si}">+ Habit</button>
+      <input class="input title-input" data-section-title="${si}" value="${escapeHtml(sec.title)}" aria-label="Category name">
+      <div class="sub-head-tools">
+        <button class="add" type="button" data-add-item="${si}">+ Habit</button>
+        ${config.daily.length > 1
+          ? `<button class="remove" type="button" data-del-section="${si}" aria-label="Remove the ${escapeHtml(sec.title)} category">&times;</button>`
+          : ''}
+      </div>
     </div>
     ${sec.items.map((it, ii) => `
       <div class="field-group">
@@ -1723,7 +1747,7 @@ function sheetMarkup(){
       <button class="remove" type="button" data-del-month="${i}" aria-label="Remove">&times;</button>
     </div>`).join('');
 
-  const sub = read('kd-fit:push', null);
+  const sub = read(NS + 'push', null);
 
   return `
   <div class="sheet-inner">
@@ -1763,13 +1787,18 @@ function sheetMarkup(){
     </div>
 
     <div class="group">
-      <div class="label">Daily habits</div>
+      <div class="sub-head">
+        <div class="label">Daily habits</div>
+        <button class="add" type="button" data-add-section>+ Category</button>
+      </div>
       ${sections}
       <div class="group-note">
-        These drive the ring, the streak and the ledger. Tap a habit's day
-        summary to run it only on certain days — a Tuesday habit can't cost
-        you a Thursday. Renaming keeps the history attached; removing a habit
-        leaves its past ticks in place but stops counting it.
+        These drive the ring, the streak and the ledger. Group them into
+        categories — Move, Mind, whatever suits — and each category gets its
+        own instrument on the main screen. Tap a habit's day summary to run it
+        only on certain days; a Tuesday habit can't cost you a Thursday.
+        Renaming keeps the history attached, and removing something leaves its
+        past ticks in place but stops counting it.
       </div>
     </div>
 
@@ -1829,7 +1858,7 @@ function sheetMarkup(){
    so anything stored by an earlier build is lifted into a one-item
    list rather than dropped. */
 function reminderTimes(){
-  const raw = read('kd-fit:reminder', null);
+  const raw = read(NS + 'reminder', null);
   if(!raw) return [];
   if(Array.isArray(raw)) return raw.filter(t => typeof t === 'string');
   if(raw.at) return [raw.at];
@@ -1927,6 +1956,25 @@ function wireSheet(sheet){
     config.training.splice(+b.dataset.delTrain, 1);
     saveConfig(); reopen();
   }));
+  q('[data-add-section]').addEventListener('click', () => {
+    collect(sheet);
+    config.daily.push({
+      id: newId(),
+      title: 'New category',
+      items: [{ id: newId(), label: 'New habit' }]
+    });
+    saveConfig(); reopen(); toast('Category added');
+  });
+  all('[data-del-section]').forEach(b => b.addEventListener('click', () => {
+    collect(sheet);
+    const si = +b.dataset.delSection;
+    const name = config.daily[si]?.title || 'category';
+    // The last category can't go — a day with no habits has nothing to be.
+    if(config.daily.length <= 1){ toast('Keep at least one category'); return; }
+    config.daily.splice(si, 1);
+    saveConfig(); reopen(); toast(`Removed ${name}`);
+  }));
+
   q('[data-add-month]').addEventListener('click', () => {
     collect(sheet);
     config.monthly.push({ id: newId(), label: 'New thing', target: 1 });
@@ -2024,13 +2072,13 @@ function wireSheet(sheet){
     if(times.length >= 8){ toast('Eight reminders is plenty'); return; }
     // Offer a sensible second slot rather than another 07:30 to edit.
     times.push(times.includes('07:30') ? '20:30' : '07:30');
-    write('kd-fit:reminder', [...new Set(times)].sort());
+    write(NS + 'reminder', [...new Set(times)].sort());
     reopen();
   });
   all('[data-remind-del]').forEach(b => b.addEventListener('click', () => {
     const times = collectTimes();
     times.splice(+b.dataset.remindDel, 1);
-    write('kd-fit:reminder', times);
+    write(NS + 'reminder', times);
     reopen();
   }));
 
@@ -2044,7 +2092,7 @@ function wireSheet(sheet){
     });
     const ok = await window.KDNative.scheduleDaily(parsed);
     if(ok){
-      write('kd-fit:reminder', times);
+      write(NS + 'reminder', times);
       reopen();
       toast(times.length === 1 ? `Reminder set for ${times[0]}` : `${times.length} reminders set`);
     }
@@ -2053,7 +2101,7 @@ function wireSheet(sheet){
   const offBtn = q('[data-remind-off]');
   if(offBtn) offBtn.addEventListener('click', async () => {
     await window.KDNative.cancelDaily();
-    try{ localStorage.removeItem('kd-fit:reminder'); unmirror('kd-fit:reminder'); }catch(e){ /* ignore */ }
+    try{ localStorage.removeItem(NS + 'reminder'); unmirror(NS + 'reminder'); }catch(e){ /* ignore */ }
     reopen(); toast('Reminder off');
   });
 
@@ -2139,13 +2187,13 @@ function persist(){
 let onboardState = null;
 
 function needsOnboarding(){
-  return !read('kd-fit:onboarded', false);
+  return !read(NS + 'onboarded', false);
 }
 
 function startOnboarding(){
   onboardState = {
     step: -1,
-    focus: null,
+    focuses: new Set(),
     picks: new Set(),
     weekly: [],
     monthly: [],
@@ -2176,7 +2224,7 @@ function finishOnboarding(){
   };
 
   saveConfig();
-  write('kd-fit:onboarded', true);
+  write(NS + 'onboarded', true);
   onboardState = null;
 
   const host = document.getElementById('onboard');
@@ -2192,7 +2240,7 @@ function finishOnboarding(){
 }
 
 function skipOnboarding(){
-  write('kd-fit:onboarded', true);
+  write(NS + 'onboarded', true);
   onboardState = null;
   const host = document.getElementById('onboard');
   if(host){ host.hidden = true; host.innerHTML = ''; }
@@ -2218,13 +2266,22 @@ function onboardStepMarkup(){
       <div class="ob-step">
         <div class="ob-kicker">Welcome</div>
         <h1 class="ob-title">What are you trying to do?</h1>
-        <p class="ob-sub">Pick one to start from. You can change everything later.</p>
+        <p class="ob-sub">
+          Pick as many as you like. We'll suggest habits to match — you choose
+          which ones to keep on the next screen, and everything is editable
+          later in Settings.
+        </p>
         <div class="ob-choices">
           ${Object.entries(STARTER_PACKS).map(([id, p]) => `
-            <button type="button" class="ob-choice${s.focus === id ? ' is-active' : ''}" data-focus="${id}">
-              ${escapeHtml(p.label)}
+            <button type="button" class="ob-choice${s.focuses.has(id) ? ' is-active' : ''}"
+                    data-focus="${id}" aria-pressed="${s.focuses.has(id)}">
+              <span>${escapeHtml(p.label)}</span>
+              <i class="ob-check" aria-hidden="true"></i>
             </button>`).join('')}
         </div>
+        <div class="ob-focus-note" data-focus-note>${
+          s.picks.size ? `${s.picks.size} habit${s.picks.size === 1 ? '' : 's'} suggested`
+                       : 'Or skip and choose your own'}</div>
       </div>`;
   }
 
@@ -2234,7 +2291,9 @@ function onboardStepMarkup(){
         <div class="ob-kicker">Every day</div>
         <h1 class="ob-title">Choose a few daily habits</h1>
         <p class="ob-sub">
-          Three or four is plenty. <b data-pick-count>${s.picks.size}</b> selected.
+          ${s.focuses.size ? 'Suggested from what you picked — ' : ''}tap to add or
+          remove any of them. Three or four is plenty, and you can change them
+          any time in Settings. <b data-pick-count>${s.picks.size}</b> selected.
         </p>
         ${HABIT_LIBRARY.map(group => `
           <div class="ob-group">
@@ -2364,11 +2423,25 @@ function wireOnboarding(host){
   };
 
   all('[data-focus]').forEach(b => b.addEventListener('click', () => {
-    s.focus = b.dataset.focus;
-    // Seed the picks so step two opens with a sensible answer already
-    // in place rather than an empty list to stare at.
-    s.picks = new Set(STARTER_PACKS[s.focus].picks);
-    all('[data-focus]').forEach(x => x.classList.toggle('is-active', x === b));
+    const id = b.dataset.focus;
+    if(s.focuses.has(id)) s.focuses.delete(id); else s.focuses.add(id);
+
+    /* Picks are recomputed from the whole selection rather than added
+       to, so deselecting a focus actually removes what it brought.
+       Anything the user then ticks by hand on the next screen survives,
+       because this only ever runs from this screen. */
+    s.picks = new Set();
+    s.focuses.forEach(f => STARTER_PACKS[f].picks.forEach(x => s.picks.add(x)));
+
+    const on = s.focuses.has(id);
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-pressed', String(on));
+    const note = q('[data-focus-note]');
+    if(note){
+      note.textContent = s.picks.size
+        ? `${s.picks.size} habit${s.picks.size === 1 ? '' : 's'} suggested`
+        : 'Or skip and choose your own';
+    }
     tap('light');
   }));
 
@@ -2431,9 +2504,9 @@ function exportBackup(){
   for(let i = 0; i < localStorage.length; i++){
     const k = localStorage.key(i);
     if(!k) continue;
-    let m = k.match(/^kd-fit:(\d{4}-\d{2}-\d{2})$/);
+    let m = k.match(DAY_ONLY_RE);
     if(m){ days[m[1]] = read(k, {}); continue; }
-    m = k.match(/^kd-fit:note:(\d{4}-\d{2}-\d{2})$/);
+    m = k.match(NOTE_KEY_RE);
     if(m){ notes[m[1]] = localStorage.getItem(k); }
   }
   const payload = { app: 'kd-fit', version: 3, exported: new Date().toISOString(), config, days, notes };
@@ -2453,7 +2526,7 @@ async function importBackup(file){
     const data = JSON.parse(await file.text());
     if(data.app !== 'kd-fit') throw new Error('Not a kd-fit backup');
     if(data.config) config = data.config;
-    Object.entries(data.days || {}).forEach(([k, v]) => write(`kd-fit:${k}`, v));
+    Object.entries(data.days || {}).forEach(([k, v]) => write(`${NS}${k}`, v));
     Object.entries(data.notes || {}).forEach(([k, v]) => setNote(k, v));
     saveConfig();
     closeSheet();
@@ -2481,7 +2554,7 @@ async function subscribePush(){
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
-    write('kd-fit:push', sub.toJSON());
+    write(NS + 'push', sub.toJSON());
     reopen();
     syncNotifStatus();
     toast('Subscribed — copy it into the repo secret');
@@ -2523,7 +2596,7 @@ async function restoreFromVault(){
        ago, close the wizard rather than letting them configure over
        the top of their own history. */
     const host = document.getElementById('onboard');
-    if(host && !host.hidden && read('kd-fit:onboarded', false)){
+    if(host && !host.hidden && read(NS + 'onboarded', false)){
       host.hidden = true;
       host.innerHTML = '';
       document.body.style.overflow = '';
@@ -2548,6 +2621,27 @@ build();
 sync();
 refreshDial();
 if(needsOnboarding()) startOnboarding();
+
+/* A demo session looks identical to the real app, which is exactly the
+   danger — a badge that says so, and a one-tap wipe of the sandbox
+   only. Nothing here can reach the real keys. */
+if(DEMO){
+  const bar = document.createElement('button');
+  bar.type = 'button';
+  bar.className = 'demo-bar';
+  bar.innerHTML = '<span>Demo — your real log is untouched</span><b>Reset</b>';
+  bar.addEventListener('click', () => {
+    const keys = [];
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k && k.startsWith('kd-demo:')) keys.push(k);
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+    location.reload();
+  });
+  document.body.appendChild(bar);
+  document.body.classList.add('is-demo');
+}
 
 // Hold the splash briefly so it reads as an intro rather than a flash,
 // but never let it outstay the content being ready.

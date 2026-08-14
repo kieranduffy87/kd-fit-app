@@ -150,7 +150,7 @@
       const { keys } = await prefs().keys();
       let restored = 0;
       for(const key of keys){
-        if(!key.startsWith('kd-fit:')) continue;
+        if(!/^kd-(fit|demo):/.test(key)) continue;
         if(global.localStorage.getItem(key) !== null) continue;
         const { value } = await prefs().get({ key });
         if(value === null || value === undefined) continue;
@@ -169,7 +169,7 @@
     try{
       for(let i = 0; i < global.localStorage.length; i++){
         const key = global.localStorage.key(i);
-        if(!key || !key.startsWith('kd-fit:')) continue;
+        if(!key || !/^kd-(fit|demo):/.test(key)) continue;
         await vaultSet(key, global.localStorage.getItem(key));
       }
     }catch(e){ /* best effort */ }
