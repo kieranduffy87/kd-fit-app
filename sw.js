@@ -1,7 +1,7 @@
 /* Bump this on every release that touches a cached asset. CSS and JS
    are served cache-first, so without a bump a returning user keeps the
    old build until the cache is cleared by hand. */
-const CACHE = 'kd-fit-v19';
+const CACHE = 'kd-fit-v22';
 const ASSETS = [
   './',
   './index.html',

@@ -2400,6 +2400,34 @@ function onboardStepMarkup(){
     </div>`;
 }
 
+/* On a tablet an onboarding step reads better as two panes than as one
+   long column: the question stays put on the left while the answers sit
+   beside it. The step markup is written once, as a flat list, so rather
+   than fork four templates the two halves are grouped here after render
+   — the heading into .ob-ask, everything the person actually touches
+   into .ob-do. On a phone both are display:contents and nothing moves. */
+function splitOnboardingPanes(host){
+  const step = host.querySelector('.ob-step');
+  if(!step || step.classList.contains('ob-cover')) return;
+  if(step.querySelector(':scope > .ob-ask')) return;
+
+  const kids = [...step.children];
+  const isHeading = el => /\bob-(kicker|title|sub)\b/.test(el.className);
+  const heads = kids.filter(isHeading);
+  const rest  = kids.filter(el => !isHeading(el));
+  if(!heads.length || !rest.length) return;
+
+  const ask = document.createElement('div');
+  ask.className = 'ob-ask';
+  const doing = document.createElement('div');
+  doing.className = 'ob-do';
+
+  step.insertBefore(ask, heads[0]);
+  heads.forEach(h => ask.appendChild(h));
+  step.appendChild(doing);
+  rest.forEach(r => doing.appendChild(r));
+}
+
 function renderOnboarding(){
   const host = document.getElementById('onboard');
   if(!host) return;
@@ -2423,6 +2451,7 @@ function renderOnboarding(){
         ${(!last && !cover) ? '<button class="btn ghost" type="button" data-ob-skip>Skip setup</button>' : ''}
       </div>
     </div>`;
+  splitOnboardingPanes(host);
   wireOnboarding(host);
 }
 

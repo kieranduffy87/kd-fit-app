@@ -1805,3 +1805,91 @@ body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}
   .col-right > .remind,
   .col-right > .footer{ grid-column:1 / -1; }
 }
+
+/* ============================================================
+   Tablet: the full-screen surfaces
+
+   The main screen already splits in two above 820px, but onboarding,
+   Settings and the day editor were still 520px columns sitting in the
+   middle of a 13-inch screen, which reads as a phone app someone
+   propped up rather than something built for the device.
+
+   Each one gets the treatment that suits what it is: onboarding asks on
+   the left and answers on the right, Settings and the day editor lay
+   their groups out two abreast. Below 820px every rule here is inert and
+   the phone is untouched.
+   ============================================================ */
+.ob-ask,
+.ob-do{ display:contents; }
+
+@media (min-width:820px){
+  /* ---------- onboarding ---------- */
+  .ob-inner{ max-width:1000px; }
+
+  /* :not(.ob-cover) — the cover is a flex column that spaces the mark,
+     the tagline and the button down the picture. Turning it into a grid
+     threw all three into the wrong places. */
+  .ob-step:not(.ob-cover){
+    display:grid;
+    grid-template-columns:minmax(240px,32%) minmax(0,1fr);
+    column-gap:clamp(2rem,5vw,4rem);
+    align-items:start;
+  }
+  .ob-ask,
+  .ob-do{ display:block; }
+
+  /* The question holds still while the answers scroll, so you can always
+     see what you are answering. */
+  .ob-ask{ position:sticky; top:0; }
+  .ob-title{ font-size:clamp(2rem,3.4vw,2.9rem); }
+  .ob-sub{ margin-bottom:0; }
+
+  /* Focus and habit chips have room to sit in a proper field rather than
+     a single stack. */
+  .ob-choices{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:0.6rem;
+  }
+
+  /* The cover is a photograph, not a form — it keeps its narrow measure
+     so the tagline stays a caption rather than stretching across the
+     whole picture. */
+  .onboard.is-cover .ob-inner{ max-width:560px; }
+
+  /* The actions bar bled to the phone's screen edges. At this width that
+     would leave it floating far from the content it belongs to, so it
+     tucks back to the column. */
+  .ob-actions{ margin-inline:0; }
+
+  /* ---------- settings, and the day editor ---------- */
+  .sheet-inner,
+  .de-inner{
+    max-width:1000px;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    column-gap:clamp(2rem,4vw,3.5rem);
+    align-items:start;
+  }
+  .sheet-head{ grid-column:1 / -1; }
+
+  /* Save applies to the whole sheet, so it spans the whole sheet rather
+     than sitting at the foot of whichever column it happened to land in.
+     :has() picks it out without needing a new class in the markup. */
+  .sheet-inner > .group:has(> [data-save]){
+    grid-column:1 / -1;
+    max-width:22rem;
+    margin-inline:auto;
+    width:100%;
+  }
+
+  /* The note is a single wide thing, not one of a pair. */
+  .de-inner > .de-group:last-of-type{ grid-column:1 / -1; }
+}
+
+/* A 13-inch screen can carry three columns of settings without the rows
+   becoming uncomfortably long. */
+@media (min-width:1180px){
+  .sheet-inner{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .ob-choices{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
