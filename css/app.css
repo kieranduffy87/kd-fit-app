@@ -1893,3 +1893,98 @@ body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}
   .sheet-inner{ grid-template-columns:repeat(3,minmax(0,1fr)); }
   .ob-choices{ grid-template-columns:repeat(3,minmax(0,1fr)); }
 }
+
+/* ============================================================
+   Tablet, second pass
+
+   Four things the device showed that the browser did not.
+   ============================================================ */
+
+/* ---------- 1. the cover is film now ----------
+   The still was a portrait 1180x2354 built for a phone, so every tablet
+   shape cropped hard into it. The film is the opposite — 16:9 — so on a
+   phone it fills the frame and on a tablet it stops trying to and takes
+   a pane of its own instead. */
+.ob-cover-video{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-1;
+  pointer-events:none;
+}
+.ob-cover-body{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  min-height:inherit;
+  flex:1;
+  position:relative;   /* above the film and its scrim */
+  z-index:1;
+}
+
+/* The scrim was painted by is-cover::before as a background image. The
+   film sits behind it now, so the layer keeps only its gradient. */
+.onboard.is-cover::before{
+  background:linear-gradient(180deg,
+    rgb(20 12 16 / 0.55) 0%,
+    rgb(20 12 16 / 0.10) 34%,
+    rgb(20 12 16 / 0.30) 68%,
+    rgb(20 12 16 / 0.86) 100%);
+}
+
+@media (min-width:820px){
+  /* ---------- 3. the actions wash spans the screen ----------
+     It bleeds to the screen edges with a negative margin, which is
+     correct on a phone where the column is the screen. In a centred
+     1000px column it stopped mid-screen and drew two hard edges. This
+     is the full-bleed trick: out to the viewport, then padded back. */
+  .ob-actions{
+    margin-inline:calc(50% - 50vw);
+    padding-inline:calc(50vw - 50% + var(--kd-pad));
+  }
+}
+
+/* The cover's actions never bleed: on a phone the picture runs to the
+   edges, and on a tablet the bar sits inside the column either way. */
+@media (min-width:820px){
+  .onboard.is-cover .ob-actions{
+    margin-inline:0;
+    padding-inline:var(--kd-pad);
+    max-width:520px;
+    margin-left:auto;
+    margin-right:auto;
+    width:100%;
+  }
+}
+
+/* ---------- 4. the mesh was tuned for a phone ----------
+   The blobs are sized in vw but the blur was a fixed 76px. At 430px a
+   78vw blob is 335px across and the blur swallows it; at 1366px the same
+   blob is 1066px and the blur barely touches the edge, so what reads as
+   soft light on a phone reads as five bright discs on a tablet — which
+   is why dark mode stopped looking dark. The blur now scales with the
+   blobs, and the whole layer sits back a little. */
+@media (min-width:820px){
+  :root{
+    --mesh-blur:clamp(76px, 18vw, 230px);
+    --mesh-alpha:0.34;
+  }
+  :root[data-theme="light"]{
+    --mesh-blur:clamp(88px, 20vw, 260px);
+    --mesh-alpha:0.42;
+  }
+}
+
+/* ---------- 5. landscape was leaving space at the edges ---------- */
+@media (min-width:1180px){
+  .shell{ max-width:1400px; }
+  /* Cards fill the room they are given rather than always pairing up,
+     so a 13-inch in landscape gets three and nothing is stranded. */
+  .col-right{
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  }
+  .sheet-inner,
+  .de-inner{ max-width:1200px; }
+}

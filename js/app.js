@@ -2283,8 +2283,16 @@ function onboardStepMarkup(){
   if(s.step === -1){
     return `
       <div class="ob-step ob-cover">
-        <div class="ob-cover-mark">${JOTARA_LOCKUP}</div>
-        <div class="ob-cover-line">Your Life, <em>Logged.</em></div>
+        <!-- The same footage the site opens with, so the first thing you
+             see in the app is the first thing you saw before installing
+             it. intro.jpg is the poster, so the frame is filled before a
+             single byte of video has decoded. -->
+        <video class="ob-cover-video" src="img/cover.mp4" poster="img/intro.jpg"
+               autoplay muted loop playsinline aria-hidden="true"></video>
+        <div class="ob-cover-body">
+          <div class="ob-cover-mark">${JOTARA_LOCKUP}</div>
+          <div class="ob-cover-line">Your Life, <em>Logged.</em></div>
+        </div>
       </div>`;
   }
 
