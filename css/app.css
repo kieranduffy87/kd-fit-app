@@ -240,10 +240,17 @@ body{
    on the compositor and never triggers layout.
    ============================================================ */
 :root{
-  --mesh-warm-1:214 150 148;   /* dusty rose  */
-  --mesh-warm-2:176 138 168;   /* mauve       */
-  --mesh-warm-3:236 170 140;   /* warm sand   */
-  --mesh-alpha:0.55;
+  /* Deep, saturated members of the plum family. The first pass used
+     pale warm tones — dusty rose, mauve, warm sand — and under `screen`
+     those lift every channel by roughly the same amount, which is the
+     definition of washing out: measured against the #241A22 ground they
+     pushed luminance from 29 to 84 while dropping saturation from 0.28
+     to 0.22. These are darker and far more saturated, so screen lifts
+     the reds and magentas and leaves the ground reading as plum. */
+  --mesh-warm-1:138 46 74;     /* wine     */
+  --mesh-warm-2:104 44 96;     /* deep plum */
+  --mesh-warm-3:156 66 44;     /* burnt amber */
+  --mesh-alpha:0.42;
   --mesh-blur:76px;
   /* Screen on a dark ground makes the blobs behave like coloured
      light rather than paint — overlaps get brighter instead of
@@ -254,7 +261,12 @@ body{
   /* On paper the same alphas turn to poster paint — light needs about
      half the strength and a slightly wider blur to stay atmospheric. */
   /* On paper the same blobs must behave like pigment, not light —
-     multiply keeps the overlaps rich instead of blowing them out. */
+     multiply keeps the overlaps rich instead of blowing them out. And
+     the pale set stays here: under multiply the deep plums that dark
+     needs would go straight to mud. */
+  --mesh-warm-1:214 150 148;   /* dusty rose */
+  --mesh-warm-2:176 138 168;   /* mauve      */
+  --mesh-warm-3:236 170 140;   /* warm sand  */
   --mesh-alpha:0.62;
   --mesh-blur:88px;
   --mesh-blend:multiply;
@@ -1840,7 +1852,7 @@ body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}
 
   /* The question holds still while the answers scroll, so you can always
      see what you are answering. */
-  .ob-ask{ position:sticky; top:0; }
+  .ob-ask{ position:sticky; top:0; z-index:1; }
   .ob-title{ font-size:clamp(2rem,3.4vw,2.9rem); }
   .ob-sub{ margin-bottom:0; }
 
@@ -1943,6 +1955,14 @@ body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}
   .ob-actions{
     margin-inline:calc(50% - 50vw);
     padding-inline:calc(50vw - 50% + var(--kd-pad));
+    /* Above the sticky question, so a long list of habits can never
+       scroll it underneath something. */
+    z-index:3;
+    /* And clear of the bottom edge. A control sitting 16px from the
+       bottom of an iPad is inside the home-indicator gesture strip,
+       where the first tap tends to go to the system rather than the
+       button — which feels exactly like a dead button. */
+    padding-bottom:calc(2.25rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -1969,7 +1989,7 @@ body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}
 @media (min-width:820px){
   :root{
     --mesh-blur:clamp(76px, 18vw, 230px);
-    --mesh-alpha:0.34;
+    --mesh-alpha:0.36;
   }
   :root[data-theme="light"]{
     --mesh-blur:clamp(88px, 20vw, 260px);
