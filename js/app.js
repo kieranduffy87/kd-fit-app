@@ -920,6 +920,11 @@ function build(){
       </div>
     </header>
 
+    <!-- Two columns on a tablet, one on a phone. The wrappers are
+         display:contents until the layout is wide enough to want them,
+         so the phone renders exactly as it always has. -->
+    <div class="col col-left">
+
     <div class="hero rise" style="animation-delay:60ms">
       <div class="dial">
         <svg viewBox="0 0 280 280" aria-hidden="true">
@@ -974,6 +979,10 @@ function build(){
       <div data-ledger-body></div>
     </section>
 
+    </div><!-- /col-left -->
+
+    <div class="col col-right">
+
     ${sections}
 
     ${config.training.length ? `
@@ -1024,6 +1033,8 @@ function build(){
       ${KD_MARK}
       <div class="label">Consistency over intensity</div>
     </footer>
+
+    </div><!-- /col-right -->
   `;
 
   el.days = document.querySelector('[data-days]');
