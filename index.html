@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- maximum-scale/user-scalable: this ships as an app, and pinch-zooming
+     an app screen leaves you panning a magnified page with no way back
+     that looks like a control — which is what the sideways drag and the
+     "weird when zoomed" both were. iOS still offers system-wide zoom in
+     Accessibility, so nothing is actually taken away. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#241A22">
 
 <!-- Theme is resolved before the first paint, otherwise a light-mode

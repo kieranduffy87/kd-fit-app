@@ -2256,6 +2256,7 @@ function finishOnboarding(){
 
   const host = document.getElementById('onboard');
   if(host){ host.hidden = true; host.innerHTML = ''; }
+  document.documentElement.classList.remove('is-onboarding');
   document.body.style.overflow = '';
 
   applyTheme();
@@ -2271,6 +2272,7 @@ function skipOnboarding(){
   onboardState = null;
   const host = document.getElementById('onboard');
   if(host){ host.hidden = true; host.innerHTML = ''; }
+  document.documentElement.classList.remove('is-onboarding');
   document.body.style.overflow = '';
 }
 
@@ -2388,7 +2390,13 @@ function onboardStepMarkup(){
       <div class="ob-group">
         <input class="input" data-ob-goal-label value="${escapeHtml(s.goalLabel)}"
                placeholder="Name it — optional" aria-label="Goal name">
-        <input class="input" type="date" data-ob-goal-date value="${escapeHtml(s.goalDate)}" aria-label="Goal date">
+        <!-- An empty date input paints nothing at all in the iOS web
+             view, so on its own it reads as a blank box with no clue
+             what it wants. The label says what it is before it is
+             touched; the field can stay empty, because it is optional. -->
+        <label class="field-label" for="ob-goal-date">Date — optional</label>
+        <input class="input" type="date" id="ob-goal-date" data-ob-goal-date
+               value="${escapeHtml(s.goalDate)}" aria-label="Goal date">
       </div>
       <div class="ob-group">
         <div class="label">Appearance</div>
@@ -2444,6 +2452,8 @@ function renderOnboarding(){
 
   host.hidden = false;
   document.body.style.overflow = 'hidden';
+  // Lets the stylesheet stand the mesh down while it cannot be seen.
+  document.documentElement.classList.add('is-onboarding');
   const cover = s.step === -1;
   host.classList.toggle('is-cover', cover);
   host.innerHTML = `

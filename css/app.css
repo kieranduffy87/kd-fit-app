@@ -1969,14 +1969,17 @@ body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}
 /* The cover's actions never bleed: on a phone the picture runs to the
    edges, and on a tablet the bar sits inside the column either way. */
 @media (min-width:820px){
+  /* The wash under the cover's buttons has to reach both screen edges.
+     Capping this bar at the reading column drew the gradient as a
+     520px-wide band with a hard edge down each side, sitting on top of
+     a full-screen film. The bar spans; only its contents are centred. */
   .onboard.is-cover .ob-actions{
-    margin-inline:0;
-    padding-inline:var(--kd-pad);
-    max-width:520px;
-    margin-left:auto;
-    margin-right:auto;
-    width:100%;
+    margin-inline:calc(50% - 50vw);
+    padding-inline:calc(50vw - 50% + var(--kd-pad));
+    justify-content:center;
   }
+  .onboard.is-cover .ob-actions > *{ max-width:520px; }
+  .onboard.is-cover .ob-actions .btn.primary{ flex:0 1 520px; }
 }
 
 /* ---------- 4. the mesh was tuned for a phone ----------
@@ -1988,11 +1991,11 @@ body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}
    blobs, and the whole layer sits back a little. */
 @media (min-width:820px){
   :root{
-    --mesh-blur:clamp(76px, 18vw, 230px);
+    --mesh-blur:clamp(76px, 9vw, 118px);
     --mesh-alpha:0.36;
   }
   :root[data-theme="light"]{
-    --mesh-blur:clamp(88px, 20vw, 260px);
+    --mesh-blur:clamp(88px, 10vw, 132px);
     --mesh-alpha:0.42;
   }
 }
@@ -2008,3 +2011,39 @@ body.is-demo .ob-inner{padding-top:calc(3.8rem + env(safe-area-inset-top));}
   .sheet-inner,
   .de-inner{ max-width:1200px; }
 }
+
+
+/* ============================================================
+   Onboarding is opaque, so stop paying for the mesh underneath it.
+
+   The blobs drift continuously and each one carries a large blur, so
+   every frame re-rasterises five full-screen layers. Behind onboarding
+   none of that is visible: the panel paints its own ground over the
+   top. Pausing the drift there took the habit screen from stalling on
+   each tap to responding immediately.
+   ============================================================ */
+html.is-onboarding .blob{ animation-play-state:paused; }
+html.is-onboarding .ambient{ opacity:0; }
+
+/* A date input with no value renders empty in the iOS web view — no
+   dd/mm/yyyy, nothing — so it needs to say what it is from the outside. */
+.field-label{
+  display:block;
+  font-size:var(--kd-fs-label);
+  font-weight:500;
+  letter-spacing:var(--kd-track-label);
+  text-transform:uppercase;
+  color:var(--kd-muted);
+  margin:0.9rem 0 0.4rem;
+}
+/* The control itself should look occupied even while it is empty. */
+.input[type="date"]{ min-height:3rem; }
+.input[type="date"]:not(:focus):invalid,
+.input[type="date"][value=""]{ color:var(--kd-muted); }
+
+/* The page never pans sideways. overflow-x:clip already says so for
+   layout; this says the same thing to touch, which is the layer that
+   was still allowing a horizontal drag. The year strip is the one
+   thing that genuinely scrolls across, so it opts back in. */
+body{ touch-action:pan-y; }
+.year-wrap{ touch-action:pan-x pan-y; }
