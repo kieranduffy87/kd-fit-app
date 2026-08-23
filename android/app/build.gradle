@@ -25,7 +25,9 @@ android {
             if (propsFile.exists()) {
                 def props = new Properties()
                 props.load(new FileInputStream(propsFile))
-                storeFile file(props['storeFile'])
+                // Relative to android/, where keystore.properties lives -- plain
+                // file() would resolve against android/app/ instead.
+                storeFile rootProject.file(props['storeFile'])
                 storePassword props['storePassword']
                 keyAlias props['keyAlias']
                 keyPassword props['keyPassword']
