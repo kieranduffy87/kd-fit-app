@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The dark half of appBackground. See values/colors.xml. -->
+    <color name="appBackground">#241A22</color>
+</resources>

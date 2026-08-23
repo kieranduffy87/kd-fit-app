@@ -7,4 +7,9 @@
     <color name="colorPrimaryDark">#241A22</color>
     <color name="colorAccent">#F4785C</color>
     <color name="splashBackground">#241A22</color>
+    <!-- Behind the web view. Once the app targets API 36 it is laid out
+         edge to edge and Capacitor insets the web view for the system
+         bars, so this colour is what shows in those strips. Matching the
+         web layer's own ground keeps the seam invisible. -->
+    <color name="appBackground">#F4E9E8</color>
 </resources>

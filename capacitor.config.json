@@ -8,6 +8,9 @@
     "backgroundColor": "#08090bff",
     "preferredContentMode": "mobile"
   },
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto"
+  },
   "plugins": {
     "SplashScreen": {
       "launchAutoHide": false,
